@@ -1,0 +1,35 @@
+\chapter{Introduction} % Write in your own chapter title
+\label{Chapter1}
+\lhead{Chapter 1. \emph{Introduction}} % Write in your own chapter title to set the page header
+
+\section{Motivation}
+Localization is an important problem in robotics. It is needed in order to solve a wide range of problems. Even simple tasks in households require a robot to be able to determine its own position in the environment. It needs to be able to find from point A to point B. Being able to do this, a robot could for example bring a fresh cup of coffee and bring the used cup back to the kitchen. It can help with cleaning tasks.\cite{pinheiro2015cleaning} It can also be highly important in industrial environments. Hamburg has one of the world's largest and busiest ports. In order to bring the shipping containers from one place to the other autonomous transport vehicles can be used. These are just a few of many real world examples, where localization is used.
+
+The Monte Carlo Localization\cite{Dellaert_1999_533} is one of the most widely used algorithms to solve the localization problem. It has proven itself to be stable and reliable in a wide range of situations. As \cite{DBLP:conf/rss/LevinsonMT07} showed it was even suitable for use in autonomous vehicles to enhance the location estimation precision using a LIDAR, GPS and odometry.
+In the case of the autonomous vehicle it is reasonable to expect that GPS will be available most of the time. It can give the vehicle a good estimation even though it can be a few meters off. In the case of the autonomous car the localization happens on a huge map and the GPS estimation is very helpful for the Monte Carlo Localization. Monte Carlo Localization works best when the position at the beginning is already known or if it at least gets a rough estimate. There are approaches to localize the robot with no prior position estimation, for example by taking the whole map into account instead of just a certain position, in the beginning. This is called global localization.
+
+There are many situations where a robot can't rely on GPS. In many buildings its signal is obstructed. Now one could use global localization in the beginning.
+But this can cause problems. On many maps there just aren't enough unique landmarks to quickly figure out the robot's pose. So in many cases the robot is not able to localize itself correctly. Once a wrong pose was determined by the localization, it can be difficult to recover from such a failure.
+
+There are some environments that heighten the chance of the occurrence of such problems. In a long hallway, for example, many parts of the outline look similar. Also they are often symmetric and that can cause additional problems, because suddenly parts of the map are indistinguishable from each other. Also many buildings have different rooms with the exact same layout. Another situation where the global localization could fail would be when the laser scanner doesn't reach any obstacles. The robot would need to drive around and find them in order to actually localize itself. 
+ 
+In most buildings there are a lot of different Wi-Fi networks. The networks MAC-address provides a unique identifier for each signal. The signal strengths can be a good indicator about how far the wireless access point is away. And while one signal alone wouldn't be enough to infer the position multiple signals from different access points can be used to do just that.
+
+This could be used to enhance Monte Carlo localization with laser scanners. When at the start no position estimation is given it could be computed with the Wi-Fi data. Also in case of a localization failure the Wi-Fi signals could be used to infer the correct position.
+
+This combines the strengths of both the position estimation with Wi-Fi signals and the localization with a laser scanner. The Wi-Fi signals have a unique identifier and will only be observed in a certain range on a map. The outline of a wall could be nearly identical in different places, but overall the localization with a laser scanner is very accurate once the true position was determined. 
+
+\section{Related Work}
+As already mentioned one of the most popular methods for localization is the Monte Carlo localization. We are going to use this method, both for localization via a 2D range finder, and parts of it also to estimate the position via Wi-Fi. \cite{Thrun:2005:PR:1121596} give an extensive overview over the Monte Carlo localization.
+
+In order for the Monte Carlo localization to work, one needs a measurement model for the sensor that is used. \cite{Thrun:2005:PR:1121596} provide models that can be used for a 2d range finder. In order to estimate the position with a Wi-Fi receiver, one needs to implement a different measurement model.
+
+There have been different approaches to solving the localization problem with Wi-Fi signals. \cite{serrano2012robot} used a propagation model to estimate the signal strength at a given point on the map. The advantage of this technique is that only the positions of the access points have to be known. But it is a lot more inaccurate than other approaches. The problem is that inside a building the Wi-Fi signal is often obstructed by obstacles, like walls, furniture or humans.  This makes the propagation model very inaccurate and thus also leads to inaccurate position estimations.
+
+A different approach to the problem uses a map that was created beforehand. \cite{biswas2010wifi} recorded Wi-Fi signals in grid like fashion, recording in a certain interval. In order to interpolate the Wi-Fi signal from the recordings, linear interpolation was used. The drawback here is that the Wi-Fi signals have to be recorded at certain positions on the map. This makes the process of creating the map more complicated and time consuming.
+
+In order to create something akin to a map from recorded Wi-Fi data, using regression proved to be useful. As it turns out Gaussian processes are well suited for this kind of problem.\\ \cite{Rasmussen:2005:GPM:1162254} give an extensive overview of how they can be used in machine learning. 
+
+\cite{ferris2006gaussian} use Gaussian processes to build the map. This means the signal strength can be recorded at random places. Thus the needed data for creating the map can be recorded while the robot drives around or even does other tasks. 
+\cite{duvallet2008wifi} use this approach to estimate the position of industrial vehicles. Here they used the Wi-Fi position estimation as a seed for a localization system using laser scanners. So for example in case the system fails and the computed location is inaccurate it uses the Wi-Fi position estimation for a rough estimate and a new starting point for the localization system.
+\cite{DBLP:conf/icra/ItoEKTSB14} had a similar approach where they used Wi-Fi data for initialization for a global Monte Carlo localization with a RGB-D sensor. Both \cite{DBLP:conf/icra/ItoEKTSB14} and \cite{duvallet2008wifi} use Gaussian processes to estimate a position via Wi-Fi. 
