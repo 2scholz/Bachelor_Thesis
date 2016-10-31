@@ -1,7 +1,14 @@
 \chapter{Implementation} % Write in your own chapter title
 \label{Chapter3}
 \lhead{Chapter 3. \emph{Implementation}} % Write in your own chapter title to set the page header
-\section{ROS}
+This chapter discusses the implementation of the parts needed for a functioning Wi-Fi position estimation. In section \ref{sec:ros} we will introduce the Robot Operating System(ROS) and explain its basic components.
+In section \ref{sec:publisher} we will explain how the required Wi-Fi data gets fetched and published for other parts of the program.
+Section \ref{sec:amcl} gives a short overview about the used implementation of the \Gls{MonteCarlo} for the 2D \gls{LaserRangeFinder}.
+In section \ref{sec:data_coll} we will show how the published Wi-Fi and position data from the robot is collected and stored for further use with the Wi-Fi position estimation.
+The section \ref{sec:gausspr} details the implementation of the \Gls{GaussianProcess} for the Wi-Fi position estimation.
+And at last section \ref{sec:wifiposest} will tie the previous chapters together and explain the Wi-Fi position estimation as a whole.
+
+\section{ROS}\label{sec:ros}
 \begin{figure}[htbp]
 	\centering
 		\includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{./Figures/dia/ros.eps}
@@ -9,24 +16,30 @@
 	\caption[Diagram of basic concepts in ROS]{Relationship of the basic parts of the ROS environment.}
 	\label{fig:ros_architecture}
 \end{figure}
-The Wi-Fi position estimation was implemented with the ROS-Framework and run on a TurtleBot 2. ROS is short for robot operating system. It supports a wide variety of robots and was designed so that different robots and environments have a common basis to make it easier to share. 
+The Wi-Fi position estimation was implemented with the ROS-Framework and run on a TurtleBot 2. ROS\citep{Fernandez:2015:LRR:2876174} is short for Robot Operating System. It supports a wide variety of robots and was designed so that different robots and environments have a common basis to make it easier to share. 
 
-The software in ROS is divided into packages. So each package usually has a different functionality or purpose. An example used in this project is the amcl package and the created package for the Wi-Fi position estimation. These packages contain nodes. The nodes are processes. Before the nodes can be executed a master has to be started. On this master the nodes are registered, so that different nodes can see each other and can communicate with each other. 
+The software in ROS is divided into packages. So each package usually has a different functionality or purpose. An example used in this project is the AMCL package and the created package for the Wi-Fi position estimation. These packages contain nodes. The nodes are processes. Before the nodes can be executed a master has to be started. On this master the nodes are registered, so that different nodes can see each other and can communicate with each other. 
 
-For the purpose of communication between the nodes there are topics and services. Topics can be either published or subscribed to. For example, there is the amcl node, that publishes a pose estimation and a Wi-Fi publisher node, that publishes the Wi-Fi signal strengths, and the Wi-Fi data recorder is subscribed to these nodes so it can save the signal strengths and the corresponding position on the map. A service can be offered or called by a node. For example amcl offers global localization via service. This means services are only performed, whenever they are called, while the data published on topics gets usually published constantly, no matter what.
+For the purpose of communication between the nodes there are topics and services. Topics can be either published or subscribed to. For example, there is the AMCL node, that publishes a pose estimation and a Wi-Fi publisher node, that publishes the Wi-Fi signal strengths, and the Wi-Fi data recorder is subscribed to these nodes so it can save the signal strengths and the corresponding position on the map. A service can be offered or called by a node. For example amcl offers \gls{GlobalLocalization} via service. This means services are only performed, whenever they are called, while the data published on topics gets usually published constantly, no matter what.
 
-\section{Wi-Fi Data Publisher}
-The first step to realize the position estimation is to actually get the Wi-Fi data. For this we use an active Wi-Fi scan. We wait for the result and handle the data. Then the ssids, MAC-addresses and signal strengths are published. This is procedure gets repeated until the node is stopped. As already discussed the scan can take up to a few seconds. Of course this means that the rate at which the node publishes new Wi-Fi data is limited by the time the scan takes as well.
-\section{amcl}
-The amcl package implements various algorithms from \cite{Thrun:2005:PR:1121596} and provides the possibility to localize the robot on a given map.(http://wiki.ros.org/amcl) It uses the following algorithms from \cite{Thrun:2005:PR:1121596}: sample\_motion\_model\_odometry, \\beam\_range\_finder\_model, likelihood\_field\_range\_finder\_model, Augmented\_MCL, and KLD\_Sampling\_MCL.
+\section{Wi-Fi Data Publisher}\label{sec:publisher}
+The first step to realize the position estimation is to actually get the Wi-Fi data. For this we use an active Wi-Fi scan. We wait for the result and handle the data. Then the SSIDs, \Gls{MAC-address}es and signal strengths are published. This is procedure gets repeated until the node is stopped. As already discussed the scan can take up to a few seconds. Of course this means that the rate at which the node publishes new Wi-Fi data is limited by the time the scan takes as well.
+\section{AMCL}\label{sec:amcl}
+We use the AMCL package(http://wiki.ros.org/amcl, accessed on 25.10.2016) for the localization using the 2D range finder. The package contains an implementation of the Monte Carlo localization and furthermore provides the needed measurement model for the laser range finder. The package implements the following specific algorithms from \citet{Thrun:2005:PR:1121596}:
+\begin{itemize}
+\item sample\_motion\_model\_odometry
+\item beam\_range\_finder\_model
+\item likelihood\_field\_range\_finder\_model
+\item Augmented\_MCL
+\item KLD\_Sampling\_MCL
+\end{itemize}
+When started AMCL publishes the pose of the robot determined by the localization. This pose contains the x and y coordinate and the orientation as a quaternion on the given map. The poses also contain a covariance matrix, that represents the spread of the particles around the determined position.
 
-When started amcl publishes the pose of the robot determined by the localization. This pose contains the x and y coordinate on the given map and the orientation as a quaternion. The poses also contain a covariance matrix, that represents the spread of the particles around the determined position.
+The package has multiple use cases in this project. For one it is used for the data collection, so that we know where on the map the data was recorded. It is also used in conjunction with the Wi-Fi position estimation, to test how well it works as an aid for the \gls{GlobalLocalization}. 
 
-The package has multiple use cases in this project. For one it used for the data collection, so that we know where on the map the data was recorded. It is also used in conjunction with the Wi-Fi position estimation, to test how well it works as an aid for the global localization. 
+The last use case is to use the Wi-Fi position estimation in case of a localization failure. We can use the method discussed in section \ref{sec:krp} as an indicator if there is a localization failure. Using the value from equation \ref{eq:quality} we can infer the quality of the localization. Usually AMCL does only compute this value, but does not publish it so that other nodes can use it. AMCL was slightly modified, so that it publishes that value under the identifier ``/max\_weight''.
 
-The last use case is to use the Wi-Fi position estimation in case of a localization failure. We can use the method discussed in section \ref{sec:krp} as an indicator if there is a localization failure. Using the value from equation \ref{eq:quality} we can infer the quality of the localization. Usually amcl does only compute this value, but does not publish it, so that other nodes can use it. So amcl was slightly modified, so that it publishes that value under the identifier ``/max\_weight''.
-
-\section{Data Collection}
+\section{Data Collection}\label{sec:data_coll}
 \begin{figure}[htbp]
 	\centering
 		\includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{./Figures/data_collector.eps}
@@ -34,23 +47,31 @@ The last use case is to use the Wi-Fi position estimation in case of a localizat
 	\caption[Diagram of wifi\_data\_collector]{This shows the nodes and their topics the Wi-Fi\_data\_collector subscribed to and how it stores the data.}
 	\label{fig:data_collector}
 \end{figure}
-In order to collect the data, the aforementioned Wi-Fi data publisher is used in combination with amcl. We need to know the position of the robot on the map, if we want to use the data later on to build a map of the signal strengths. Amcl publishes the needed pose of the robot and the Wi-Fi data publisher the needed MAC-addresses and signal strengths. So the data collection node updates the pose whenever there is a new one and whenever new Wi-Fi data is published it stores the data together with the pose in csv files. For each MAC-address there is a separate file.
- 
-\section{Gaussian Process}
+In order to collect the data, the aforementioned Wi-Fi data publisher is used in combination with AMCL. We need to know the position of the robot on the map, if we want to use the data later on to build a map of the signal strengths. AMCL publishes the needed pose of the robot and the Wi-Fi data publisher the needed \Gls{MAC-address}es and signal strengths. So the data collection node updates the pose whenever there is a new one and whenever new Wi-Fi data is published it stores the data together with the pose in csv files. For each \Gls{MAC-address} there is a separate file.
 \begin{figure}[htbp]
 	\centering
-		\includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{./Figures/gp_wifi_comparison_2.png}
+		\includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{./Figures/wifi_data.png}%./Figures/gp_wifi_comparison_2.png}
 		\rule{35em}{0.5pt}
-	\caption[Wi-Fi data and the corresponding Gaussian process]{Above the recorded Wi-Fi signal strengths are shown. The lower image shows the mean of the corresponding Gaussian process.}
-	\label{fig:gp_wifi_comparison}
+	\caption[Wi-Fi data]{Both pictures represent Wi-Fi data from one access point, recorded on the hallway. Above each dot is a certain recording at the position on the map. Beneath we interpolated the data, to highlight the behavior of the signal strength. The colors from strong to weak signal strength: yellow, light blue, red, purple, blue.}
+	\label{fig:wifi_data}
 \end{figure}
-The model from section \ref{sec:gp} was used to implement the Gaussian process. A change was made to the formula for the kernel. The reason for this is that we want to prevent the hyperparameters from taking on negative values. This means we either have to apply an optimization algorithm that works for constrained problems, or make sure the parameters can't take on negative values. The first solution would mean we would have to use a more complicated algorithm, therefore we decided to take the second approach. 
+ 
+\section{Gaussian Process}\label{sec:gausspr}
+
+\begin{figure}[htbp]
+	\centering
+		\includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{./Figures/gp_mean_variance.png}%./Figures/gp_wifi_comparison_2.png}
+		\rule{35em}{0.5pt}
+	\caption[Wi-Fi data and the corresponding \Gls{GaussianProcess}]{The picture above represents the mean of a \Gls{GaussianProcess} that was trained for the data from figure \ref{fig:wifi_data}. Below is the corresponding variance of the same process. As one can see the variance is very low close to the region where the data was recorded. This happens because we are more confident about the signal strengths in these regions. The further away we go, the higher the variance.}
+	\label{fig:gp_mean_var}
+\end{figure}
+The model from section \ref{sec:gp} was used to implement the \Gls{GaussianProcess}. A change was made to the formula for the \gls{Kernel}. The reason for this is that we want to prevent the \gls{Hyperparameter}s from taking on negative values. This means we either have to apply an optimization algorithm that works for constrained problems, or make sure the parameters can't take on negative values. The first solution would mean we would have to use a more complicated algorithm, therefore we decided to take the second approach. 
 
 The covariance function from equation \ref{eq:rbf} is changed to the following form:
 \begin{equation}
 cov(y_p,y_q) = \sigma_f \exp\bigg(-\dfrac{|x_p-x_q|^2}{l}\bigg) + \sigma_n \delta_{pq}
 \end{equation}
-In order to make sure that the hyperparameters can only take on positive values they are substituted by the following terms:
+In order to make sure that the \gls{Hyperparameter}s can only take on positive values they are substituted by the following terms:
 \begin{equation}
 \begin{aligned}
 \sigma_f &= exp(2\theta_1)\\
@@ -59,7 +80,7 @@ l &= exp(\theta_2)\\
 \end{aligned}
 \end{equation}
 
-This leads to changes the gradient too:
+This leads to changes for the gradient too:
 \begin{equation}
 \begin{aligned}
 \dfrac{\partial cov}{\partial \theta_1} &= 2\sigma_f exp\bigg(-\dfrac{|x_p-x_q|^2}{l}\bigg)\\
@@ -70,9 +91,13 @@ This leads to changes the gradient too:
 
 Now the optimization algorithm is applied to $\theta_1$, $\theta_2$ and $\theta_3$. When these become negative, $\sigma_f$, $l$ and $\sigma_n$ will stay positive. 
 
-The Gaussian process is not a node, but a simple class. In order to create a Gaussian process usually a path to a folder with csv-files is provided. These files then contain training data, so positions and corresponding signal strengths. Each MAC-address usually has its own csv-file named after itself, so that the Gaussian process can distinguish them. 
+The \Gls{GaussianProcess} is not a node, but a simple class. In order to create a \Gls{GaussianProcess} usually a path to a folder with csv-files is provided. These files then contain training data, so positions and corresponding signal strengths. Each \Gls{MAC-address} usually has its own csv-file named after itself, so that the \Gls{GaussianProcess} can distinguish them.
 
-\section{Wi-Fi Position Estimation}
+The implementation of the \Gls{GaussianProcess} was done with the Eigen-library(http://eigen.tuxfamily.org/, accessed on 28.10.2016). There are many matrix- and vector-operations needed and the Eigen-library is well suited for these kind of problems, as it provides matrix- and vector-classes with a number of useful algorithms for them. 
+
+For the optimization of the \gls{Hyperparameter}s the Rprop-algorithm detailed in section \ref{sec:gp_basics} was implemented in a separate class. So once a \Gls{GaussianProcess} was created, the Rprop-class can be used in order to train the \Gls{GaussianProcess}, so that it fits the training data. 
+
+\section{Wi-Fi Position Estimation}\label{sec:wifiposest}
 \begin{figure}[htbp]
 	\centering
 		\includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{./Figures/wifi_pos_est.eps}
@@ -84,27 +109,63 @@ The Gaussian process is not a node, but a simple class. In order to create a Gau
 	\centering
 		\includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{./Figures/wifi_pos_est.png}
 		\rule{35em}{0.5pt}
-	\caption[Wi-Fi position estimation example]{Example of using the Wi-Fi position estimation for global localization.}
+	\caption[Wi-Fi position estimation example]{Example of using the Wi-Fi position estimation for \gls{GlobalLocalization} in our laboratory. The black circle represents the robot and the green arrows the position and orientation of the particles of AMCL using the 2D laser range finder. In the upper left picture the Wi-Fi position estimation was performed already. Compared to figure \ref{fig:global_localization} one can see that the particles are a lot more concentrated and not spread over the entire state space. The position is off by a certain margin. In the following pictures the robot is turning around itself to observe its environment with the 2D \gls{LaserRangeFinder}. The particles are quickly clustered around the correct location and the thus the correct position of the robot can be inferred.}
 	\label{fig:wifi_pos_est_example}
 \end{figure}
-The Wi-Fi position estimation uses the data that was collected to create a number of Gaussian processes. For every network there exists data for a new Gaussian process is created. 
+The Wi-Fi position estimation uses the data that was collected to create a number of \Gls{GaussianProcess}es. For every network there exists data for, a new \Gls{GaussianProcess} is created. 
 
-Since we only try to estimate the position we basically only replicate the first step of the global Monte Carlo localization. So particles are spread across the map. 
+Since we only try to estimate the position we basically only replicate the first step of the global \Gls{MonteCarlo}. So particles are spread across the map. 
 
 The Wi-Fi state publisher node will provide us with the current Wi-Fi signal strengths of the different networks. We will use this data with the coordinates from the particles to compute the weights for each particle. 
 
-The processes get the coordinates and the signal strength that corresponds to the MAC-address of the data that the particular Gaussian process was created with. For each particle the weights are computed by multiplying the computed values from each MAC-address. So for $n$ MAC-addresses we get the following formula to compute the weight:
-%ToDo: change notation, look up how weights in Monte Carlo are denoted, and find notation for Gaussian process set.
+The processes get the coordinates, and the signal strength that corresponds to the \Gls{MAC-address} of the data that the particular \Gls{GaussianProcess} was created with. For each particle the weights are computed by multiplying the computed values from each \Gls{MAC-address}. So for $n$ \Gls{MAC-address}es we get the following formula to compute the weight:
+%ToDo: change notation, look up how weights in Monte Carlo are denoted, and find notation for \Gls{GaussianProcess} set.
 \begin{equation}
 w(x_*) = \prod_{i=1}^n(p(z_{t}^{[i]}|x_*))
 \end{equation} 
 
-At the end the highest weight for a particular position determines which position is the most likely one. This position is then sent to amcl. Amcl will use it as a new start position and will proceed the localization from those coordinates. 
+At the end the highest weight for a particular position determines which position is the most likely one. This position is then sent to AMCL. AMCL will use it as a new start position and will proceed the localization from those coordinates. 
 
-Amcl will reset its own particles and spread them around that location. How far the particles are spread is determined by a covariance matrix. These values are not computed, but set manually.
+AMCL will reset its own particles and spread them around that location. How far the particles are spread is determined by a covariance matrix. These values are not computed, but set manually.
 
-So the first use case would be the manual initiation of the position estimation in order to give amcl a seed for the localization. This would be similar to a global localization. The robot doesn't know where it is on the map and has to deduce its own position with the available data. 
+So the first use case would be the manual initiation of the position estimation in order to give AMCL a seed for the localization. This would be similar to a \gls{GlobalLocalization}. The robot doesn't know where it is on the map and has to deduce its own position with the available data. 
 
-Another use case would be in case of a localization failure. To determine a localization failure we can use equation \ref{eq:quality}. Usually this is used to add new random particles to the set with the probability determined by equation \ref{eq:quality}. 
+Another use case would be in case of a localization failure. To determine a localization failure we use the ``/max\_weight'' published by AMCL using the 2D laser range finder.
 
-Instead we will specify a threshold. If the computed value from equation \ref{eq:quality} is bigger than the threshold, the Wi-Fi position estimation is triggered. A position will be computed and sent to amcl as a new start position. Figure \ref{fig:ros_localization} shows that the Wi-Fi position estimation node is subscribed to ``/max\_weight''. This value is the value used to determine if there is a localization failure. 
+We specify a threshold. If the computed value from equation \ref{eq:quality} is bigger than the threshold, the Wi-Fi position estimation is triggered. A position will be computed and sent to AMCL as a new start position. 
+
+\section{Using the Wi-Fi Position Estimation}
+\begin{figure}[htbp]
+	\centering
+		\includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{./Figures/turtlebot.png}
+		\rule{35em}{0.5pt}
+	\caption[Turtlebot]{The Turtlebot used for testing the software and carrying out the experiments in chapter \ref{Chapter4}.}
+	\label{fig:turtlebot}
+\end{figure}
+\begin{figure}[htbp]
+	\centering
+		\includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{./Figures/turtlebot.png}
+		\rule{35em}{0.5pt}
+	\caption[Turtlebot]{The hallway where we tested the software and carried out the experiments in chapter \ref{Chapter4}.}
+	\label{fig:hallway}
+\end{figure}
+In the preceding sections we explained the implementation of all the parts of the system. So this chapter will discuss the appliance of said software in the real world. The hardware used for testing the software can be seen in figure \ref{fig:turtlebot}. It is a Turtlebot 2 with a Kinect. To complement the Kinect there is also the \gls{LaserRangeFinder} ''Hokuyo UTM-30LX`` installed. The environment we tested the software in was mainly a long hallway that can be seen in figure \ref{fig:hallway}. According to Microsoft the Kinect has a scanning range of 4 meters, but the data is still usable some meters beyond\citep{ece21221}. The \gls{LaserRangeFinder} has a scanning range of 30 meters\citep{laser}, so it is vastly superior for our purposes, because it can see a lot further in the long hallway. 
+
+The goal now is to put the Wi-Fi position estimation to use. The first step here is to first collect data in the environment the robot is supposed to localize itself. This can be done with AMCL from section \ref{sec:amcl} with the laser range finder, the Wi-Fi publisher from section \ref{sec:publisher} and the Wi-Fi data collector from section \ref{sec:data_coll}. So one needs to start the nodes one after another. It is also important to make sure that AMCLs localization is close to the real position, so it is advisable to set the position manually at the start. The data collector offers different configurations. An important one is whether the Wi-Fi data should always be collected or only when standing still. In our tests we decided for the latter. To configure the node the launch file for the node can be customized. It contains the used parameters.
+
+So when the nodes are started the Wi-Fi data can be collected by calling the rosservice ``/start\_recording'' with the value ``true''. Now the data is recorded according to the chosen configuration. Another node not mentioned yet is the ``map\_traverser\_node''. This node gets a list of x- and y-coordinates as parameter and then drives to these positions one after the other. This node can also be used to record the data. Another method is to operate the robot via keyboard with the ``turtlebot\_teleop'' package(http://wiki.ros.org/turtlebot\_teleop, last visited 27.10.2016). The Wi-Fi and position data is then saved in comma separated values(csv)-files. The Wi-Fi data can also be visualized by using occupancy grids. Calling the service ``/publish\_wifi\_maps'' publishes the occupancy grids that can be used to visualize the currently collected data. The topics the occupancy grids are published to are named after the data's \Gls{MAC-address} and an identifier of the nature of the visualization. There are four identifiers:
+\begin{itemize}
+\item ln: normalized with the minimum and maximum of only this access point.
+\item li: normalized with the minimum and maximum of only this access point and interpolated.
+\item gn: normalized with the minimum and maximum of all access points.
+\item gi: normalized with the minimum and maximum of all access points and interpolated.
+\end{itemize}
+
+The collected Wi-Fi data can be used as training data for the \Gls{GaussianProcess}. The Wi-Fi position estimation node is given a parameter that contains the path to a folder with the csv-files containing the training data. There is a launch file that contains these parameters and should be customized to point to the correct folder containing the recorded Wi-Fi data.
+
+Once started the node either trains the \Gls{GaussianProcess}es created from the training data, or if this was already done when previously running the node it loads the already optimized \gls{Hyperparameter}s. The optimized \gls{Hyperparameter}s are saved as csv-files as well, in a subfolder of the folder containing the training data. Once the node has been initialized fully it can be used to approximate the position of the robot. In order to send the position estimation to AMCL the service called ``compute\_amcl\_start\_point'' can be used. Another parameter given to the Wi-Fi position estimation node is a threshold for the ``/max\_weight'' value published by AMCL. Is the value over this threshold the Wi-Fi position estimation is triggered to recover from the localization failure. 
+
+\section{Chapter Summary}
+In this chapter we discussed the implementation of all parts needed for the Wi-Fi position estimation. At first we explained the ROS-framework used for the implementation of the system. Afterwards the parts needed to collect the Wi-Fi data were shown, with the Wi-Fi data publisher, AMCL and the Wi-Fi data collector. The collected data could then be used as training data. In order to implement the position estimation first the implementation of the \Gls{GaussianProcess} was discussed and afterwards its application for the Wi-Fi position estimation node. At last we were showing the particular hardware used and expounded on how to use the implemented software. 
+
+We now have a system that is able to estimate the position via Wi-Fi data. In the next chapter we will use it in different experiments to determine how effective it is for the proposed tasks. 
