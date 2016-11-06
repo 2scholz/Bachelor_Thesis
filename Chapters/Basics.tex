@@ -1,18 +1,50 @@
 \chapter{Basics} % Write in your own chapter title
 \label{Chapter2}
 \lhead{Chapter 2. \emph{Basics}} % Write in your own chapter title to set the page header
-
-This chapter summarizes the basics for robot self-localization. At first in section \ref{sec:localization} we will explain how uncertainty can complicate the task of localization and how probability can be helpful to approach this problem. At first we will introduce the \gls{RecursiveStateEstimation} and building on this move on to an implementation of it using a \gls{Particle} filter. Afterwards we will show how said \gls{Particle} filter can be used for robot self-localization with the \Gls{MonteCarlo}. In the next section we will explain the problem of \gls{GlobalLocalization} and then introduce the \gls{KidnappedRobotProblem} and a possible solution.
+This chapter summarizes the basics for robot self-localization. At first in section \ref{sec:localization} we will give an example of data produced by a laser range finder. Next we will show how uncertainty can complicate the task of localization and how probability can be helpful to approach this problem. We will introduce the \gls{RecursiveStateEstimation} and building on this move on to an implementation of it using a \gls{Particle} filter. Afterwards we will show how said \gls{Particle} filter can be used for robot self-localization with the \Gls{MonteCarlo}. In the next section we will explain the problem of \gls{GlobalLocalization} and then introduce the \gls{KidnappedRobotProblem} and a possible solution.
 
 In section \ref{sec:wifi} we will look into the aspects of Wi-Fi that are important for the Wi-Fi position estimation.
 
 Section \ref{sec:gp} will revolve around the Wi-Fi sensor model, that can be used with the \Gls{MonteCarlo}. We will define what a \Gls{GaussianProcess} is and derive it from a Bayesian treatment of the linear \gls{Regression}. 
 
 \section{Localization} \label{sec:localization}
-\subsection{Uncertainty}
-Uncertainty plays a big role in robotics. By dealing with the real world this inherently introduces unpredictability. The robot's environment is dynamic and can change constantly. Even the robot itself changes its own environment by acting in it. Robots usually have a variety of sensors. They are used to get information about the state of their environment. The sensors used in robotics have certain limitations. They can only provide an inexact interpretation of the world around them and this is something we need to keep in mind. When an \gls{Odometer} tracks a robots path it will never be exact. When a laser scanner measures the distance to an obstacle we have to expect that there will be an error margin. The sensors have to deal with physical limitations when trying to capture the state of their environment. Often they are subject noise. In localization 2D maps get used very often. They are a model of the real world. But once again it is only an approximate model that strips away a lot of information from the real world and thus introduces more uncertainty\citep[p. 3-4]{Thrun:2005:PR:1121596}.
+\subsection{Localization with a Laser Range Finder}
+\begin{figure}[htbp]
+	\centering
+		\includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{./Figures/turtlebotfront.JPG}
+		\rule{35em}{0.5pt}
+	\caption[TurtleBot]{The TurtleBot used for testing the software and carrying out the experiments in chapter \ref{Chapter4}.}
+	\label{fig:turtlebot2}
+\end{figure}
+\begin{figure}[htbp]
+	\centering
+		\includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{./Figures/lrf_localization.png}
+		\rule{35em}{0.5pt}
+	\caption[Example of localization with laser range finder]{Example of localization with a laser range finder. The black circle is the robot. The robot is on an obstacle map that was created beforehand, so the other black lines signify obstacles. The red squares are the laser range finder data. As we can see the red squares mostly fit to the obstacles.}
+	\label{fig:laser_range_finder}
+\end{figure}
+The goal of localization is that a mobile robot is able to determine its own position. For this purpose we use a map of the environment of the robot. In our case the robot used is a TurtleBot 2 (http://www.turtlebot.com, accessed on 02.11.2016) shown in figure \ref{fig:turtlebot2}. This particular robot uses wheels to move around and in order get information about the state of its environment it uses a Kinect camera \citep{ece21221} and a 2D \gls{LaserRangeFinder}. The robot also has sensors that provide us with information about its movement. An odometer is used to measure the distance traveled and a \gls{Gyro} to measure the angular velocity. Now using the information provided by the various sensors the objective is to infer the location of the robot. 
 
-Probability can be a helpful tool to circumvent this problem. When localizing instead of trying to find the pose of the robot directly we test how likely it is that the robot is in different hypothesized poses. So, using all the information we get from the sensors we compute which poses are the most likely ones\citep[p. 5]{Thrun:2005:PR:1121596}.
+The 2D laser range finder is a popular choice for this kind of task. The prices for these kind of sensors are reasonable. It produces reliable data. It gives us the distance to obstructions in the robot's environment. The laser range finder uses laser beams. The beams get reflected by the obstructions back to the laser range finder. The range finder then measures the time it takes for the beams to come back and uses this information in order to infer the distance of the objects in its vicinity. The further away the object, the longer it takes for the beam to get reflected back to the laser range finder. 
+
+It also has advantages over cameras for this particular task. Cameras produce pictures, which give us a lot more complex information to work with. The distance to objects can be interpreted and processed very easily. In pictures we would have to filter for the desired information. 
+
+Figure \ref{fig:laser_range_finder} shows the kind of data a laser range finder produces. Here the black circle is the robot. The red squares show us the distance to obstacles in the robot's environment. Here the robot is localized on a map, so the position of the robot on the map mirrors its position in the real world. This map is an obstacle map, so it shows where we would expect obstacles in the environment. The map is also divided into small grid cells, that can be either occupied, free or unknown. Here black means occupied, light gray means free and dark gray means unknown. As one can see the laser range finder data mostly matches our expectations. The obstacles found by the laser range finder match the obstacles shown on the map, so it is likely that the robot is located on the correct position on the map. So sensors like the laser range finder can be used to check if the robot is localized in the correct position by comparing the produced data with the expectations based on the map. Sensors like \glspl{Odometer} and \glspl{Gyro} can be used to move the robot accordingly on the map. So when the robot drives a few meter forward, the same should happen on the map. 
+
+As laid out the robot has different kinds of sensors that provide us with information. Our goal is to infer the position of the robot on a map of the environment using that data. But for a variety of reasons we can not be 100\% certain about the data sensors produce.
+
+\subsection{Uncertainty}
+\begin{figure}[htbp]
+	\centering
+		\includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{./Figures/laser_range_finder_uncertainty.png}
+		\rule{35em}{0.5pt}
+	\caption[Example of uncertainty when localizing with a laser range finder]{This is an example of how uncertainty plays a role in localization. The figure is very similar to figure \ref{fig:laser_range_finder}, but signified by the blue circle there are measurements created by the laser range finder that do not fit to the map. The reason in this case was simply that a human was standing there.}
+	\label{fig:laser_range_finder_uncertainty}
+\end{figure}
+Uncertainty plays a big role in robotics. By dealing with the real world this inherently introduces unpredictability. The robot's environment is dynamic and can change constantly. Even the robot itself changes its own environment by acting in it. See for example figure \ref{fig:laser_range_finder_uncertainty}. It is similar to figure \ref{fig:laser_range_finder}, but here measurements appear that don't fit the expectation we would have given the map the robot is located on. The robot is still located on the right position that mirrors its position in the real world. What changed is the environment. Someone was standing in the room and the data produced by the laser range finder mirrors that circumstance. A similar example would be when furniture is moved to a different place. Suddenly the data will not match in a particular place. It would be annoying when every small change in the environment would break our localization. 
+Robots usually have a variety of sensors. They are used to get information about the state of their environment. The sensors used in robotics have certain limitations. They can only provide an inexact interpretation of the world around them and this is something we need to keep in mind. When an \gls{Odometer} tracks a robots path it will never be exact. When a laser scanner measures the distance to an obstacle we have to expect that there will be an error margin. The sensors have to deal with physical limitations when trying to capture the state of their environment. Often they are subject to noise. In localization 2D maps get used very often. They are a model of the real world. But once again it is only an approximate model that strips away a lot of information from the real world and thus introduces more uncertainty \citep[p.\ 3-4]{Thrun:2005:PR:1121596}.
+
+Probability can be a helpful tool to circumvent this problem. When localizing instead of trying to find the pose of the robot directly we test how likely it is that the robot is in different hypothesized poses. So, using all the information we get from the sensors we compute which poses are the most likely ones \citep[p.\ 5]{Thrun:2005:PR:1121596}. In the following section we will show an algorithm that uses probability to deal with the uncertainty in our sensor data.
 \subsection{Recursive State Estimation}
 \citet{Thrun:2005:PR:1121596} divide the data usually collected by robots into two different categories:
 \begin{enumerate}
@@ -20,9 +52,9 @@ Probability can be a helpful tool to circumvent this problem. When localizing in
 	\item \Gls{EnvironmentMeasurementData}, denoted $z_{t_1:t_2}$ for data from time $t_1$ to time $t_2$
 	\item \Gls{ControlData}, denoted $u_{t_1:t_2}$ for data from time $t_1$ to time $t_2$
 \end{enumerate}
-The first one gives us information about the current state of the environment, provided by sensors like cameras, laser range scanners or Wi-Fi receivers. The second kind of data gives us information about the change of state. A common example for this is the velocity of a robot, usually measured by an \gls{Odometer}\citep[p. 22-23]{Thrun:2005:PR:1121596}.
+The first one gives us information about the current state of the environment, provided by sensors like cameras, laser range scanners or Wi-Fi receivers. The second kind of data gives us information about the change of state. These are values that are given to the robot to execute some action, so for example a velocity. Sensors like odometers, a sensor that measure the distance traveled, could be classified as producing environment measurement data, but in practice this kind of data is often used as control data \citep[p.\ 22-23]{Thrun:2005:PR:1121596}.
 
-The current state is denoted $x_t$. At this point we will rely on probability for the reasons already explained. So, the probability of state $x_t$ is the following: $p(x_t|x_{0:t-1},z_{1:t-1}, u_{1:t})$. This takes all previous states, \gls{EnvironmentMeasurementData} and \gls{ControlData} into account. But if we assume that state $x_t$ is a sufficient summary of everything that happened before time step $t$, then we can omit most data: 
+The current time step is denoted as $t$, so the current state is denoted $x_t$. At this point we will rely on probability for the reasons already explained. The probability of state $x_t$ is the following: $p(x_t|x_{0:t-1},z_{1:t-1}, u_{1:t})$. Here all \gls{ControlData} up to time step $t$ is taken into account and all \gls{EnvironmentMeasurementData} up to the previous time step $t-1$ is taken into account. But if we assume that state $x_t$ is a sufficient summary of everything that happened before time step $t$, then we can omit most data: 
 \begin{equation} \label{eq:statetransition}
 p(x_t|x_{0:t-1},z_{1:t-1}, u_{1:t}) = p(x_t|x_{t-1}, u_t)
 \end{equation}
@@ -30,7 +62,7 @@ The probability that a certain measurement was observed can be described by $p(z
 \begin{equation} \label{eq:measurementprob}
 p(z_t|x_{0:t},z_{1:t-1}, u_{1:t}) = p(z_t|x_t)
 \end{equation}
-Equation \ref{eq:statetransition} is known as the state transition probability and equation \ref{eq:measurementprob} is known as the measurement probability. The state transition probability takes the \gls{ControlData} into account. As we will see for localization this means it is used to reflect the movement of the robot. The measurement probability on the other hand takes the measurement data into account. For localization this means it is used to reflect the information the robot has about its environment at the moment\citep[p. 24-25]{Thrun:2005:PR:1121596}.
+Equation \ref{eq:statetransition} is known as the state transition probability and equation \ref{eq:measurementprob} is known as the measurement probability. The state transition probability takes the \gls{ControlData} into account. As we will see, for localization this means it is used to model the movement of the robot. The measurement probability on the other hand takes the measurement data into account. For localization this means it is used to reflect the information the robot has about its environment at the moment \citep[p.\ 24-25]{Thrun:2005:PR:1121596}.
 
 The state of a robot is represented by so called belief distributions. 
 \begin{equation} \label{eq:prediction}
@@ -40,7 +72,7 @@ Equation \ref{eq:prediction} is often referred to as prediction. It doesn't take
 \begin{equation} \label{eq:posterior}
 bel(x_t) = p(x_t|z_{1:t}, u_{1:t})
 \end{equation}
-The \gls{Posterior} from equation \ref{eq:posterior} on the other hand does take the last measurement into account\citep[p. 25-26]{Thrun:2005:PR:1121596}.
+The \gls{Posterior} from equation \ref{eq:posterior} on the other hand does take the last measurement into account \citep[p.\ 25-26]{Thrun:2005:PR:1121596}. So $\overline{bel}(x_t)$ can be seen as the prior, that is computed with incomplete information and ${bel}(x_t)$ is the corresponding posterior, that is created by also using the last measurement data. As can be seen in algorithm \ref{bayes_filter} the posterior from equation \ref{eq:posterior} is computed by using the prediction from equation \ref{eq:prediction}.
 
 Once again, we don't want to take all past data from all time steps into account. So we are going to simplify both equations for our purposes. $bel(x_t)$ can be simplified by using Bayes rule and equation \ref{eq:measurementprob}:
 \begin{equation}\label{bayes}
@@ -50,9 +82,9 @@ p(x_t|z_{1:t}, u_{1:t}) &= \dfrac{p(z_t|x_t,z_{1:t-1},u_{1:t})p(x_t|z_{1:t-1},u_
 bel(x_t) &= \eta p(z_t|x_t)\overline{bel}(x_t)
 \end{aligned}
 \end{equation}
-Here $\eta$ is simply a constant, stemming from the fact that $p(z_t|z_{1:t-1},u_{1:t})$ is independent of the state $x_t$ and so no matter what value $x_t$ takes on, it will always stay the same. 
+Here $\eta$ is a normalizer, stemming from the fact that $p(z_t|z_{1:t-1},u_{1:t})$ is independent of the state $x_t$ and so no matter what value $x_t$ takes on in $p(x_t|z_{1:t},u_{1:t})$, it does not influence $\eta$.
 
-$\overline{bel}(x_t)$ can be simplified for our purposes, using the theorem of total probability and equation \ref{eq:statetransition}\citep[p. 31-33]{Thrun:2005:PR:1121596}.
+$\overline{bel}(x_t)$ can be simplified for our purposes, using the theorem of total probability and equation \ref{eq:statetransition} \citep[p.\ 31-33]{Thrun:2005:PR:1121596}.
 \begin{equation} \label{eq:overbel}
 \begin{aligned}
 p(x_t|z_{1:t-1},u_{1:t}) &= \int p(x_t|x_{t-1},z_{1:t-1},u_{1:t})p(x_{t-1}|z_{1:t-1},u_{1:t})dx_{t-1}\\
@@ -60,10 +92,10 @@ p(x_t|z_{1:t-1},u_{1:t}) &= \int p(x_t|x_{t-1},z_{1:t-1},u_{1:t})p(x_{t-1}|z_{1:
 \overline{bel}(x_t) &= \int p(x_t|u_t,x_{t-1})bel(x_{t-1})dx_{t-1}
 \end{aligned}
 \end{equation}
-In the second step in equation \ref{eq:overbel} we make use of the fact the $u_t$ is not needed to infer the probability of state $x_{t-1}$ and therefore simply omit it. 
+In the second step in equation \ref{eq:overbel} we make use of the fact that $u_t$ is not needed to infer the probability of state $x_{t-1}$ and therefore simply omit it. 
 \ref{eq:overbel} and \ref{bayes} are used in the Bayes filter algorithm.
 \begin{algorithm}
-\caption{Bayes\_filter \citep[p. 27]{Thrun:2005:PR:1121596}}
+\caption{Bayes\_filter \citep[p.\ 27]{Thrun:2005:PR:1121596}}
 \label{bayes_filter}
 \begin{algorithmic}[1]
 \Procedure{Bayes\_filter}{$bel(x_{t-1}),u_t,z_t$}
@@ -82,29 +114,29 @@ The algorithm gets the distribution of belief $bel(x_{t-1})$ from the last time 
 	\centering
 		\includegraphics[page=1,trim={6cm 6.5cm 3cm 5.7cm},clip]{./Figures/fig.pdf}
 		\rule{35em}{0.5pt}
-	\caption[Localization Example]{A simple example to explain how Bayes filter works. In (a) the belief is evenly distributed. In (b) the robot observes the door and the measurement data reflects this and updates $bel(x)$ accordingly. In (c) the robot moves to the right and the beliefs structure shifts to the right as well, but the peaks become lower, because the \gls{ControlData} could be imprecise. In (d) the robot takes the new measurement data into account. The belief clearly spikes at the correct position. In (e) the robot moved again. The spike is still in the correct position, but it is lower\citep[p. 6]{Thrun:2005:PR:1121596}.}
+	\caption[Localization Example]{A simple example to explain how the Bayes filter works. In (a) the belief is evenly distributed. In (b) the robot observes the door and the measurement data reflects this and updates $bel(x)$ accordingly. In (c) the robot moves to the right and the beliefs structure shifts to the right as well, but the peaks become lower, because the \gls{ControlData} could be imprecise. In (d) the robot takes the new measurement data into account. The belief clearly spikes at the correct position. In (e) the robot moved again. The spike is still in the correct position, but it is lower \citep[p.\ 6]{Thrun:2005:PR:1121596}.}
 	\label{fig:loc_example}
 \end{figure}
 
-Figure \ref{fig:loc_example} shows a simple example how the algorithm could be used for localization. It shows a robot that is able to if it stands in front of a door. It reflects the nature of the \gls{ControlData} and measurement data. Whenever the robot moved and the \gls{ControlData} is used to update the belief, the belief still spikes in the correct position, but the spike becomes weaker. We have to take into account that the \gls{Odometer} could give us imprecise measurements. This is the reason why we use the measurement data too. Even if we had the correct position in the beginning, when we only use \gls{ControlData}, after driving around for some time the localization will be off by a huge margin. The measurement data is there to correct this. If we look at both \gls{ControlData} and measurement data in a certain time interval the uncertainty induced by moving around is small enough that we can compensate for it by using the measurement data. 
+Figure \ref{fig:loc_example} shows a simple example how the algorithm could be used for localization. It shows a robot that is able to detect if it stands in front of a door. It reflects the nature of the \gls{ControlData} and measurement data. Whenever the robot moved and the \gls{ControlData} is used to update the belief, the belief still spikes in the correct position, but the spike becomes weaker. We have to take into account that the \gls{Odometer} could give us imprecise measurements. This is the reason why we use the measurement data too. Even if we had the correct position in the beginning, when we only use \gls{ControlData}, after driving around for some time the localization will be off by a huge margin. The measurement data is there to correct this. If we look at both \gls{ControlData} and measurement data in a certain time interval the uncertainty induced by moving around is small enough that we can compensate for it by using the measurement data. 
 
 The figure also provides a good example as to why we use probabilities. In figure \ref{fig:loc_example} (b) the robot senses a door. There are three different doors, but the robot can't be sure which door it is, so it simply applies the same probabilities to all three doors instead of randomly choosing one. Then it also can't be sure about the exact position in front of these doors because the data could be imprecise. So in front of each door the distribution has bell-shaped spikes to reflect this. 
 
 Another good example why probabilities work so well can be observed in (c). The robot moved and of course the \gls{ControlData} is also imprecise. So the spikes move according to the \gls{ControlData}, but they get weaker and more spread out.
 
-Now (d) shows a nice example how the data from the time steps before get taken into account. The spikes move according to the \gls{ControlData}. Now the robot observes a door once again, just like in (b). But because the belief has only a spike in front of the correct door, the new belief has a high and distinct spike in front of the correct door after taking the measurement data into account.
+Now (d) shows a nice example how the data from the previous time steps get taken into account. The spikes move according to the \gls{ControlData}. Now the robot observes a door once again, just like in (b). But because the belief has only a spike in front of the correct door, the new belief has a high and distinct spike in front of the correct door after taking the measurement data into account.
 \subsection{Particle Filter}
-The \gls{Particle} filter is a non-parametric solution to implement the Bayes filter.  Here the \gls{Posterior} distribution $bel(x_t)$ is represented by finitely many samples\citep[p. 85]{Thrun:2005:PR:1121596}.
+The \gls{Particle} filter is a non-parametric solution to implement the Bayes filter.  Here the \gls{Posterior} distribution $bel(x_t)$ is represented by finitely many samples \citep[p.\ 85]{Thrun:2005:PR:1121596}.
 
-The \gls{Posterior} distribution, so the \gls{Particle}s, are denoted as:
+Specifically it is represented by a set of \gls{Particle}s, that is denoted as:
 \begin{equation}
 X_t = x_t^{[1]},x_t^{[2]},...,x_t^{[M]}
 \end{equation}
 
-Each \gls{Particle} represents a possible state hypothesis at time $t$. $M$ is the number of \gls{Particle}s\citep[p. 96-97]{Thrun:2005:PR:1121596}.
+Each \gls{Particle} represents a possible state hypothesis at time $t$. $M$ is the number of \gls{Particle}s \citep[p.\ 96-97]{Thrun:2005:PR:1121596}.
 
 \begin{algorithm}
-\caption{Particle\_filter \citep[p. 98]{Thrun:2005:PR:1121596}}
+\caption{Particle\_filter \citep[p.\ 98]{Thrun:2005:PR:1121596}}
 \label{particle_filter}
 \begin{algorithmic}[1]
 \Procedure{Particle\_filter}{$X_{t-1},u_t,z_t$}
@@ -123,7 +155,7 @@ Each \gls{Particle} represents a possible state hypothesis at time $t$. $M$ is t
 \end{algorithmic}
 \end{algorithm}
 
-So the belief $bel(x_t)$ is approximated by \gls{Particle} set $X_t$. The probability for a state hypothesis to be included is ideally proportional to its Bayes filter \gls{Posterior} $bel(x_t)$\citep[p. 98]{Thrun:2005:PR:1121596}.
+So the belief $bel(x_t)$ is approximated by \gls{Particle} set $X_t$. The probability for a state hypothesis to be included is ideally proportional to its Bayes filter \gls{Posterior} $bel(x_t)$ \citep[p.\ 98]{Thrun:2005:PR:1121596}.
 \begin{equation} \label{eq:particle_prob}
 x_t^{[m]} \sim p(x_t|z_{1:t},u_{1:t})
 \end{equation}
@@ -147,10 +179,10 @@ On line 9 new \gls{Particle}s get drawn. This happens according to the weights $
 	\centering
 		\includegraphics[page=70,trim={5cm 6cm 3cm 5.3cm},clip]{./Figures/fig.pdf}
 		\rule{35em}{0.5pt}
-	\caption[Simple example of localization with \gls{Particle} filter]{This is a simple example of the localization realized with a \gls{Particle} filter. It is similar to figure \ref{fig:loc_example}, but this time the belief is not a curve but instead represented by the distribution of \gls{Particle}s\citep[p. 251]{Thrun:2005:PR:1121596}.}
+	\caption[Simple example of localization with \gls{Particle} filter]{This is a simple example of the localization realized with a \gls{Particle} filter. It is similar to figure \ref{fig:loc_example}, but this time the belief is not a curve but instead represented by the distribution of \gls{Particle}s \citep[p.\ 251]{Thrun:2005:PR:1121596}.}
 	\label{fig:particle_localization}
 \end{figure}
-The \gls{Particle} filter can be used for localization\citep[p. 252]{Thrun:2005:PR:1121596}. Figure \ref{fig:particle_localization} shows a simple example. This figure is similar to figure \ref{fig:loc_example}. But here the \gls{Particle}s and their weights are used to represent the belief distribution. In (a), (c) and (e) only the distribution of the \gls{Particle}s is shown, but not their weights. It shows how after some iterations the \gls{Particle}s are clustered around the positions that are most likely the real position. But this also involves the disadvantage that after some iterations the \gls{Particle}s will only be clustered around one spot, so we only observe this particular part of the whole belief. This is both an advantage and a disadvantage. It means we save computing power, because we only compute a small part of the whole belief distribution. But it also means that after some iterations we will only observe one particular point of the belief and disregard the rest. In certain situations this can lead to localization failures, which can't be resolved unless we tweak the algorithm. How this happens and how those situations can be salvaged will be explained in the following section \ref{sec:krp}.
+The \gls{Particle} filter can be used for localization \citep[p.\ 252]{Thrun:2005:PR:1121596}. Figure \ref{fig:particle_localization} shows a simple example. This figure is similar to figure \ref{fig:loc_example}. But here the \gls{Particle}s and their weights are used to represent the belief distribution. In (a), (c) and (e) only the distribution of the \gls{Particle}s is shown, but not their weights. It shows how after some iterations the \gls{Particle}s are clustered around the positions that are most likely the real position. But this also involves the disadvantage that after some iterations the \gls{Particle}s will only be clustered around one spot, so we only observe this particular part of the whole belief. This is both an advantage and a disadvantage. It means we save computing power, because we only compute a small part of the whole belief distribution. But it also means that after some iterations we will only observe one particular point of the belief and disregard the rest. In certain situations this can lead to localization failures, which can't be resolved unless we tweak the algorithm. How this happens and how those situations can be salvaged will be explained in the following section \ref{sec:krp}.
 
 There is \gls{ControlData} that is usually provided by an \gls{Odometer}. The measurement data is usually provided by sensors like \glspl{LaserRangeFinder}. In our specific case the Wi-Fi receiver will be another source of measurement data. 
 
@@ -161,7 +193,7 @@ That happens in the next step. The measurement model takes the newly sampled \gl
 These models are different for different kind of sensors. Later on we will show the used measurement model for the Wi-Fi receiver in-depth. 
 
 \begin{algorithm}
-\caption{Monte\_Carlo\_Localization \cite[p. 252]{Thrun:2005:PR:1121596}}
+\caption{Monte\_Carlo\_Localization \citep[p.\ 252]{Thrun:2005:PR:1121596}}
 \label{alg:monte_carlo}
 \begin{algorithmic}[1]
 \Procedure{Monte\_Carlo\_Localization}{$X_{t-1},u_t,z_t,m$}
@@ -191,15 +223,15 @@ Algorithm \ref{alg:monte_carlo} is the \Gls{MonteCarlo}. Note how similar it is 
 \end{figure}
 There is local localization and there is \gls{GlobalLocalization}. In the local localization problem the position at the beginning is already known. The \gls{Particle}s are already clustered around the correct position at the beginning. The task then is just to track the position from there on out. In the \gls{GlobalLocalization} problem we have no information about the robot's location at the start.
 
-A common approach to solve this problem is to spread the \gls{Particle}s over the entire map at the start. After some iterations of weighing and sampling the \gls{Particle}s they are supposed to be clustered around the real state. And in many situations this . There are some situations where this can pose a problem though.
+A common approach to solve this problem is to spread the \gls{Particle}s over the entire map at the start. After some iterations of weighing and sampling the \gls{Particle}s they are supposed to be clustered around the real state. Sometimes this approach does not localize the robot in the right position and there are a number of circumstances that can increase the likelihood of such a global localization failure.
 
 Many buildings have multiple rooms with similar structures. This can lead to the creation of multiple clusters and the pose is ambiguous. Many rooms are symmetric. This too can lead to clusters on multiple locations. 
 \subsection{Kidnapped Robot Problem} \label{sec:krp}
 The \gls{KidnappedRobotProblem} occurs when, while performing localization, the robot is taken and placed at a different location. It won't be able to register where it went in most cases. Wheeled robots usually use \gls{Odometer}s for the \gls{ControlData} and once the robot is taken up and not on the ground they won't register anything anymore. 
 
-This leads to problems when the \gls{Particle}s are already clustered around one pose. When sampling new \gls{Particle}s this cluster will persist and there will not be any \gls{Particle}s on the rest of the map. To recover from such failures one can introduce a certain number of random \gls{Particle}s into the set\citep[p. 256]{Thrun:2005:PR:1121596}.
+This leads to problems when the \gls{Particle}s are already clustered around one pose. When sampling new \gls{Particle}s this cluster will persist and there will not be any \gls{Particle}s on the rest of the map. To recover from such failures one can introduce a certain number of random \gls{Particle}s into the set \citep[p.\ 256]{Thrun:2005:PR:1121596}.
 
-We could introduce a certain number of random \gls{Particle}s in every iteration. But we can also use the measurement model and the generated weights as an indicator how likely the current pose is. For this purpose we calculate the average weight of the current iteration\citep[p. 257]{Thrun:2005:PR:1121596}.
+We could introduce a certain number of random \gls{Particle}s in every iteration. But we can also use the measurement model and the generated weights as an indicator how likely the current pose is. For this purpose we calculate the average weight of the current iteration \citep[p.\ 257]{Thrun:2005:PR:1121596}.
 \begin{equation}
 \dfrac{1}{M}\sum_{m=1}^{M}w_t^{[m]} \approx p(z_t|z_{1:t-1},u_{1:t},m)
 \end{equation}
@@ -218,12 +250,12 @@ During the resampling process random \gls{Particle}s are drawn with probability:
 \max\{0.0, 1.0-w_{fast}/w_{slow}\}
 \end{equation}
 
-The higher the long term probability $w_{slow}$ is compared to $w_{fast}$ the more likely it is that random \gls{Particle}s get introduced. So that means the lower the recent weights are compared to the older ones, the higher the probability that random \gls{Particle}s are drawn\citep[p. 258-259]{Thrun:2005:PR:1121596}.
+The higher the long term probability $w_{slow}$ is compared to $w_{fast}$ the more likely it is that random \gls{Particle}s get introduced. That means the lower the recent weights are compared to the older ones, the higher the probability that random \gls{Particle}s are drawn \citep[p.\ 258-259]{Thrun:2005:PR:1121596}.
 % TODO: Maybe add augmented mcl algorithm from page 258
 \section{Wi-Fi}\label{sec:wifi}
-A Wi-Fi signal is spread from a base station known as access point. Each signal carries a unique identifier called \Gls{MAC-address}, which can be used to set the different signals apart. The Service Set Identifier (\Gls{SSID}) on the other hand isn't unique and there are often multiple access points distributing Wi-Fi signals under the same \Gls{SSID}. This makes the \Gls{MAC-address} relevant and the \Gls{SSID} irrelevant for the Wi-Fi position estimation\citep{ieee802.11-2012}.
+A Wi-Fi signal is spread from a base station known as access point. Each signal carries a unique identifier called media access control (MAC) address, which can be used to set the different signals apart. The Service Set Identifier (\Gls{SSID}) on the other hand isn't unique and there are often multiple access points distributing Wi-Fi signals under the same \Gls{SSID}. This makes the \Gls{MAC-address} relevant and the \Gls{SSID} irrelevant for the Wi-Fi position estimation \citep{ieee802.11-2012}.
 
-The Wi-Fi signal strength is measured in dBm. According to our own experience the range of the signal is between about -90 dbm up to-40 dbm. The higher the number the better the signal. For our purposes the stability of the data transfer via the Wi-Fi connections is unimportant. We are only interested the received signal strength.
+The Wi-Fi signal strength is measured in dBm. This is a logarithmic unit of measurement that is based on order of magnitude, rather than a linear scale. The reason for this is that the signal strengths deteriorate very quickly. According to our own experience the range of the signal is between about -90 dBm up to -40 dBm. The higher the number the better the signal. For our purposes the stability of the data transfer via the Wi-Fi connections is unimportant. We are only interested the received signal strength.
 
 The access points send their signal on so called channels. Wi-Fi signals are spread on different frequency ranges. The ranges usually used are 2.4 GHz and 5 GHz. These frequency bands are then further divided into channels. So each Wi-Fi signal is spread on a specific channel. The more Wi-Fi signals in a close range send on the same channel, the more they interfere with each other. 
 
@@ -231,7 +263,7 @@ Our goal is to fetch the MAC-address and the corresponding signal strength from 
 
 \section{Wi-Fi Sensor Model} \label{sec:gp}
 \subsection{Overview}
-As discussed earlier in order for the Monte Carlo localization to work with a certain type of sensor, we need to provide a measurement model for it. Our goal is to create one for a Wi-Fi receiver. For this purpose we chose to create a map of the Wi-Fi signal strengths. Doing this for Wi-Fi signals is different from creating a map of obstacles for example. For an obstacle map a point on the map can only have 3 different states: free, occupied and unknown. But Wi-Fi signals change constantly from position to position. This makes it more complicated to create an accurate map. It isn't feasible to record the Wi-Fi signal strengths on every single point of the map. Like we discussed the scanning process alone will take a few seconds. Thus we choose to record a fair amount of data points and use \gls{Regression} to interpolate a likely value for the Wi-Fi signal strengths at every point on the map. Wi-Fi signals can be unpredictable in the way they spread. With no obstacles between robot and access point it is reasonable to expect the signal to constantly get weaker the further we go away. But in buildings there will be walls and other obstacles between the access points and the receiver. 
+As discussed earlier, in order for the Monte Carlo localization to work with a certain type of sensor, we need to provide a measurement model for it. Our goal is to create one for a Wi-Fi receiver. For this purpose we chose to create a map of the Wi-Fi signal strengths. Doing this for Wi-Fi signals is different from creating a map of obstacles for example. For an obstacle map a point on the map can only have 3 different states: free, occupied and unknown. But Wi-Fi signals change constantly from position to position. This makes it more complicated to create an accurate map. It isn't feasible to record the Wi-Fi signal strengths on every single point of the map. Like we discussed the scanning process alone will take a few seconds. Thus we choose to record a fair amount of data points and use \gls{Regression} to interpolate a likely value for the Wi-Fi signal strengths at every point on the map. Wi-Fi signals can be unpredictable in the way they spread. With no obstacles between robot and access point it is reasonable to expect the signal to constantly get weaker the further we go away. But in buildings there are walls and other obstacles that can obstruct and deflect the signal.
 
 \Gls{GaussianProcess}es are a very flexible solution for this kind of problem. They are non-parametric and using \gls{Hyperparameter} optimization it is possible to fit them to the Wi-Fi signals. As we will show with a \Gls{GaussianProcess} it is possible to compute a Gaussian distribution for every coordinate on the map. So given a coordinate x and y we can compute a Gaussian distribution with a mean and variance. The resulting Gaussian distribution is a model of the probability of the occurrence of a signal strength at that coordinate. This property makes it very well suited to use it as measurement model. We are not interested in the most likely signal strength observed at a certain point on the map, but in the probability that a given signal strength is observed. This is needed in order to compute the weights for particles of the Monte Carlo localization, so a Gaussian process is very well suited for this task.
 
@@ -239,33 +271,33 @@ In the further subsections we will explain how \Gls{GaussianProcess}es work and 
 
 \subsection{Gaussian Processes}\label{sec:gp_basics}
 We have a dataset $D$ of $n$ observations of the form $D=\{(\mathbf{x_i},y_i)|i = 1,...,n\}$. In our example the $\mathbf{x_i}$ is a coordinate on the map and $y_i$ is the associated Wi-Fi signal strength. Now in \gls{Regression} we want to infer the function values for new inputs. So we want to get a function $f$ from the dataset $D$. 
-But how do we infer function f? We need to make previous assumptions about the function because otherwise all functions that cross all training inputs and the corresponding values would be equally valid. The two common methods to achieve this are: \citep[p. 2]{Rasmussen:2005:GPM:1162254}
+But how do we infer function f? We need to make previous assumptions about the function because otherwise all functions that cross all training inputs and the corresponding values would be equally valid. The two common methods to achieve this are: \citep[p.\ 2]{Rasmussen:2005:GPM:1162254}
 \begin{enumerate}
 	\setlength\itemsep{0 em}
 	\item Restrict function $f$ to certain classes of functions.
 	\item Put \gls{Prior} probabilities on all possible functions.
 \end{enumerate}
-When using the first solution depending on what classes are chosen, they can be a bad fit. For example one can imagine that linear functions would be a bad fit for Wi-Fi data. They are not flexible enough. On the other hand it can happen that the classes chosen lead to overfitting when they are too flexible\citep[p. 2]{Rasmussen:2005:GPM:1162254}.
+When using the first solution depending on what classes are chosen, they can be a bad fit. For example one can imagine that linear functions would be a bad fit for Wi-Fi data. They are not flexible enough. On the other hand it can happen that the classes chosen lead to overfitting when they are too flexible \citep[p.\ 2]{Rasmussen:2005:GPM:1162254}.
 
 In the second solution we would need to put a \gls{Prior} on all possible functions. The possible functions are infinitely many, so this seems like a difficult task. This is where the \Gls{GaussianProcess} can help us. 
 
-A stochastic process is a generalization of the probability distribution. While the probability distribution concerns scalars and vectors, the process concerns functions\citep[p. 2]{Rasmussen:2005:GPM:1162254}. Here we will focus on processes that are Gaussian. The reason for that is that is that it makes the computations required a lot easier. 
-One can think of a function $f(x)$ as a vector, where each entry specifies a value for a specific input $x$. These vectors would be infinitely large. When we want to infer a function value from a \Gls{GaussianProcess} at finitely many points we can just ignore the infinite other points. This makes it computationally feasible to use \Gls{GaussianProcess}es for \gls{Regression}\citep[p. 2]{Rasmussen:2005:GPM:1162254}. 
+A stochastic process is a generalization of the probability distribution. While the probability distribution concerns scalars and vectors, the process concerns functions \citep[p.\ 2]{Rasmussen:2005:GPM:1162254}. Here we will focus on processes that are Gaussian. The reason for that is that is that it makes the computations required a lot easier. 
+One can think of a function $f(x)$ as a vector, where each entry specifies a value for a specific input $x$. These vectors would be infinitely large. When we want to infer a function value from a \Gls{GaussianProcess} at finitely many points it is as if we had taken the infinitely many other points taken into account, even though we ignore them \citep[p.\ 2]{Rasmussen:2005:GPM:1162254}. 
 \begin{figure}[htbp]
 	\centering
 		\includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{./Figures/gp_prior.png}
 		\rule{35em}{0.5pt}
-	\caption[\gls{Prior}]{An example of how the \gls{Prior} distribution of functions works. In (a) functions were drawn from the \gls{Prior}. As one can see they have similar characteristics. In (b) the \gls{Posterior} is shown. Two points were observed. The solid line is the mean prediction. The shaded region is twice the standard deviation at each input value $x$\citep[p. 3]{Rasmussen:2005:GPM:1162254}}.
+	\caption[\gls{Prior}]{An example of how the \gls{Prior} distribution of functions works. In (a) functions were drawn from the \gls{Prior}. As one can see they have similar characteristics. In (b) the \gls{Posterior} is shown. Two points were observed. The solid line is the mean prediction. The shaded region is twice the standard deviation at each input value $x$ \citep[p.\ 3]{Rasmussen:2005:GPM:1162254}}.
 	\label{fig:gp_prior}
 \end{figure}
 
 To give a better intuition on how inferring the function $f$ from the dataset $D$ works we will give an example in form of figure \ref{fig:gp_prior}. As one can see in (a) the functions are drawn without any observations. In (b) two observations were made. The functions go through the observed values. The thick line signifies the mean prediction. But this method also gives as a variance at each input value. The closer the input value is to an observation, the lower the standard deviation indicated by the gray shadows. The obvious reason is that we are more certain about the true function value the closer we are to the observations we made.
 
-When using \Gls{GaussianProcess}es the form of the drawn functions is determined by a covariance function\citep[p. 4]{Rasmussen:2005:GPM:1162254}. This function determines the functions that are considered for inference. So a different covariance function would have created a different mean and variance and the functions drawn from the \gls{Prior} in (a) would have looked different. This makes choosing a fitting covariance function important. A better fit produces a more accurate result. But covariance functions usually aren't static. There are parameters. But these can be learned, that is why they are called \gls{Hyperparameter}s. So while we still have to choose a fitting covariance function for the \Gls{GaussianProcess} they can be fit to the data by determining the right \gls{Hyperparameter}s. How to do this will be discussed later in this section. In the following section we will define what a \Gls{GaussianProcess} is and how it can be used for \gls{Regression}. 
+When using \Gls{GaussianProcess}es the form of the drawn functions is determined by a covariance function \citep[p.\ 4]{Rasmussen:2005:GPM:1162254}. This function determines the functions that are considered for inference. So a different covariance function would have created a different mean and variance and the functions drawn from the \gls{Prior} in (a) would have looked different. This makes choosing a fitting covariance function important. A better fit produces a more accurate result. But covariance functions usually aren't static. There are parameters. But these can be learned, that is why they are called \gls{Hyperparameter}s. So while we still have to choose a fitting covariance function for the \Gls{GaussianProcess} they can be fit to the data by determining the right \gls{Hyperparameter}s. How to do this will be discussed later in this section. In the following section we will define what a \Gls{GaussianProcess} is and how it can be used for \gls{Regression}. 
 
 %\subsubsection{Regression}
 \paragraph{Regression}
-\Gls{Regression} is a method to determine a relationship between a number of variables, using data was recorded beforehand. So in our example we want to know the relationship between the Wi-Fi signal strength and the coordinates on the map. 
+\Gls{Regression} is a method to determine a relationship between a number of variables, using data that was recorded beforehand. So in our example we want to know the relationship between the Wi-Fi signal strength and the coordinates on the map. 
 We are going to use Gaussian process regression to predict the likelihood of Wi-Fi signals at certain coordinates based on the Wi-Fi signals that we observed beforehand. To explain how we do this with \Gls{GaussianProcess}es we are going to start with a simpler \gls{Regression} and go on from there. 
 
 We are going to look at the linear model from a Bayesian perspective. 
@@ -279,13 +311,13 @@ f(\mathbf{x}) &= \mathbf{x^T}\mathbf{w}\\
 y &= f(\mathbf{x}) + \varepsilon
 \end{aligned}
 \end{equation}
-Here $f(\mathbf{x})$ is the function value. $\mathbf{w}$ is a vector of weights, which act as the parameters of the linear function. $y$ are the observed function values. Because the real values won't be exactly on the graph of $f(\mathbf{x})$ the noise term $\varepsilon$ is added\citep[p. 8]{Rasmussen:2005:GPM:1162254}. 
+Here $f(\mathbf{x})$ is the function value. $\mathbf{w}$ is a vector of weights, which act as the parameters of the linear function. $y$ are the observed function values. Because the real values won't be exactly on the graph of $f(\mathbf{x})$ the noise term $\varepsilon$ is added \citep[p.\ 8]{Rasmussen:2005:GPM:1162254}. 
 
 The noise term is of the form of a Gaussian distribution with zero mean and variance $\sigma_n^2$.
 \begin{equation}\label{noise_term}
 \varepsilon \sim \mathcal{N}(0,\sigma_n^2)
 \end{equation}
-From this we infer the likelihood $p(\mathbf{y}|\mathbf{X},\mathbf{w})$, so the probability density of the observations $\mathbf{y}$ given the weights $\mathbf{w}$ and the training inputs $\mathbf{X}$\citep[p. 9]{Rasmussen:2005:GPM:1162254}.
+From this we infer the likelihood $p(\mathbf{y}|\mathbf{X},\mathbf{w})$, so the probability density of the observations $\mathbf{y}$ given the weights $\mathbf{w}$ and the training inputs $\mathbf{X}$ \citep[p.\ 9]{Rasmussen:2005:GPM:1162254}.
 \begin{equation}\label{eq:likelihood}
 \begin{aligned}
 p(\mathbf{y}|\mathbf{X},\mathbf{w}) &= \prod_{i=1}^{n}p(y_i|\mathbf{x_i},\mathbf{w}) = \prod_{i=1}^{n}\dfrac{1}{\sqrt{2\pi\sigma_n}}\exp\big({-\dfrac{(y_i-\mathbf{x_i}^T\mathbf{w})^2}{2\sigma_n^2}}\big)\\
@@ -294,7 +326,7 @@ p(\mathbf{y}|\mathbf{X},\mathbf{w}) &= \prod_{i=1}^{n}p(y_i|\mathbf{x_i},\mathbf
 \end{equation}
 We can form the likelihood to a Gaussian distribution with mean $\mathbf{X}^T\mathbf{w}$, which is $f(x)$, and a variance of $\sigma_n^2I$, which resembles the noise term $\varepsilon$.
 
-Because we use the Bayesian formalism we need to specify a \gls{Prior} over the weights. This \gls{Prior} expresses what we believe their nature is like before we look at the observations. For this we use another Gaussian distribution. It will have a mean of zero and the variance is the covariance matrix $\Sigma_p$\citep[p. 9]{Rasmussen:2005:GPM:1162254}.
+Because we use the Bayesian formalism we need to specify a \gls{Prior} over the weights. This \gls{Prior} expresses what we believe their nature is like before we look at the observations. For this we use another Gaussian distribution. It will have a mean of zero and the variance is the covariance matrix $\Sigma_p$ \citep[p.\ 9]{Rasmussen:2005:GPM:1162254}.
 \begin{equation}\label{eq:weight_prior}
 \mathbf{w} \sim \mathcal{N}(0,\Sigma_p)
 \end{equation}
@@ -302,7 +334,7 @@ Because we use the Bayesian formalism we need to specify a \gls{Prior} over the 
 To be able to predict new values, we need to know the weights. This means we want to infer the value of the weights from the \gls{TrainingSet}. This is called the \gls{Posterior} and has the form $p(\mathbf{w}|\mathbf{X},\mathbf{y})$. We can use Bayes' theorem in order to achieve this.
 \begin{equation}\label{eq:bayestheorem}
 \begin{aligned}
-\text{posterior} &= \dfrac{\text{likelihood} \times \text{prior}}{\text{marginal likelihood}}\\
+\text{posterior} &= \dfrac{\text{likelihood} \cdot \text{prior}}{\text{marginal likelihood}}\\
 p(\mathbf{w}|\mathbf{y},\mathbf{X}) &= \dfrac{p(\mathbf{y}|\mathbf{X},\mathbf{w})p(\mathbf{w})}{p(\mathbf{y}|\mathbf{X})}
 \end{aligned}
 \end{equation}
@@ -321,9 +353,9 @@ Here $\bar{\mathbf{w}} = \sigma_n^{-2}(\sigma_n^{-2}\mathbf{X}\mathbf{X}^T+\Sigm
 \begin{equation}\label{eq:posterior_gauss}
 p(\mathbf{w}|\mathbf{X},\mathbf{y}) \sim \mathcal{N}(\bar{\mathbf{w}}=\dfrac{1}{\sigma_n^2}A^{-1}\mathbf{X}\mathbf{y},A^{-1})
 \end{equation}
-with $A = \sigma_n^{-2}\mathbf{X}\mathbf{X}^T + \Sigma_p^{-1}$\citep[p. 9]{Rasmussen:2005:GPM:1162254}.
+with $A = \sigma_n^{-2}\mathbf{X}\mathbf{X}^T + \Sigma_p^{-1}$ \citep[p.\ 9]{Rasmussen:2005:GPM:1162254}.
 
-Now we want to predict new values. We have a new input $\mathbf{x_*}$ with the function value $f_* \triangleq f(\mathbf{x_*})$. In order to achieve this we use the \gls{Posterior} distribution and average over all possible parameter values\citep[p. 11]{Rasmussen:2005:GPM:1162254}.
+Now we want to predict new values. We have a new input $\mathbf{x_*}$ with the function value $f_* \triangleq f(\mathbf{x_*})$. In order to achieve this we use the \gls{Posterior} distribution and average over all possible parameter values \citep[p.\ 11]{Rasmussen:2005:GPM:1162254}.
 \begin{equation}\label{eq:predictive_distribution}
 \begin{aligned}
 p(f_*|\mathbf{x_*},\mathbf{X},\mathbf{y}) &= \int p(f_*|\mathbf{x_*},\mathbf{w})p(\mathbf{w}|\mathbf{X},\mathbf{y})d\mathbf{w}\\
@@ -332,9 +364,9 @@ p(f_*|\mathbf{x_*},\mathbf{X},\mathbf{y}) &= \int p(f_*|\mathbf{x_*},\mathbf{w})
 \end{equation}
 This is called the predictive distribution. With this distribution one can predict the function values for new inputs $\mathbf{x_*}$. But of course this solution is still very limited. It still only considers linear functions and won't be flexible enough for the Wi-Fi data. 
 
-But there is a trick we can apply in order to fix this flaw. We can simply project the inputs into high dimensional space by using a set of basis functions and apply the linear \gls{Regression} model in that space. A simple example would be $\phi(x) = (1,x,x^2,x^3,...)$. As long as the function is independent of $\mathbf{w}$ one can still apply the linear \gls{Regression} to it\citep[p. 11]{Rasmussen:2005:GPM:1162254}.
+But there is a trick we can apply in order to fix this flaw. We can simply project the inputs into high dimensional space by using a set of basis functions and apply the linear \gls{Regression} model in that space. A simple example would be $\phi(x) = (1,x,x^2,x^3,...)$. As long as the function is independent of $\mathbf{w}$ one can still apply the linear \gls{Regression} to it \citep[p.\ 11]{Rasmussen:2005:GPM:1162254}.
 
-We will look closer at the basis function at a later point, for now it is simply given by $\phi(x)$. This changes the model for linear \gls{Regression} as follows\citep[p. 12]{Rasmussen:2005:GPM:1162254}.
+We will look closer at the basis function at a later point, for now it is simply given by $\phi(x)$. This changes the model for linear \gls{Regression} as follows \citep[p.\ 12]{Rasmussen:2005:GPM:1162254}.
 \begin{equation}\label{eq:basis_function}
 f(\mathbf{x}) = \phi(\mathbf{x})^T\mathbf{w}
 \end{equation}
@@ -344,7 +376,7 @@ f_*|\mathbf{x_*},\mathbf{X},\mathbf{y} \sim \mathcal{N}(\dfrac{1}{\sigma_n^2}\ph
 \end{equation}
 Here $\Phi = \Phi(\mathbf{X})$ and $A = \sigma_n^{-2}\Phi\Phi^T+\Sigma_p^{-1}$.
 
-One drawback here is $A^{-1}$. We would have to invert $A$ which is a $N\times N$ matrix, where $N$ is the size of the feature space. But we can rewrite the formula\citep[p. 12]{Rasmussen:2005:GPM:1162254}. 
+One drawback here is $A^{-1}$. We would have to invert $A$ which is a $N\times N$ matrix, where $N$ is the size of the feature space. But we can rewrite the formula \citep[p.\ 12]{Rasmussen:2005:GPM:1162254}. 
 \begin{equation}\label{eq:final_prediction_distri}
 f_*|\mathbf{x_*},\mathbf{X}, \mathbf{y} \sim \mathcal{N}(\phi_*^T\Sigma_p\Phi(K+\sigma_n^2I)^{-1}\mathbf{y}, \phi_*\Sigma_p\phi_*-\phi_*^T\Sigma_p\Phi(K+\sigma_n^2I)^{-1}\Phi^T\Sigma_p\phi_*)
 \end{equation}
@@ -358,7 +390,7 @@ k(\mathbf{x_p}, \mathbf{x_q}) &= \phi(\mathbf{x_p})^T\Sigma_p\phi(\mathbf{x_q})\
 &= \psi(\mathbf{x_p}) \cdot \psi(\mathbf{x_q})
 \end{aligned}
 \end{equation}
-The fact that we can rewrite this function as a dot product makes it possible to apply the so called \gls{Kernel} trick\citep[p. 12]{Rasmussen:2005:GPM:1162254}. We can define a function $k(\mathbf{x_p},\mathbf{x_q})$ and then replace all occurrences by it. The \gls{Kernel} trick is used to lift the inputs into a higher dimensional space, while making all computations still in the input space. This saves a lot of computation time and memory. So we are going to place the \gls{Kernel} function where we can in equation \ref{eq:final_prediction_distri}.
+The fact that we can rewrite this function as a dot product makes it possible to apply the so called \gls{Kernel} trick \citep[p.\ 12]{Rasmussen:2005:GPM:1162254}. We can define a function $k(\mathbf{x_p},\mathbf{x_q})$ and then replace all occurrences by it. The \gls{Kernel} trick is used to lift the inputs into a higher dimensional space, while making all computations still in the input space. This saves a lot of computation time and memory. So we are going to place the \gls{Kernel} function where we can in equation \ref{eq:final_prediction_distri}.
 \begin{equation}\label{prediction_distri_with_kernel}
 f_*|\mathbf{x_*},\mathbf{X}, \mathbf{y} \sim \mathcal{N}(\mathbf{k_*}^T(K+\sigma_n^2I)^{-1}\mathbf{y}, k(\mathbf{x_*},\mathbf{x_*})-\mathbf{k_*}^T(K+\sigma_n^2I)^{-1}\mathbf{k_*})
 \end{equation}
@@ -368,7 +400,7 @@ Equation \ref{prediction_distri_with_kernel} now enables us, given the training 
 
 Now we have everything we need to fully define the \Gls{GaussianProcess} and then predict values from it. 
 
-According to \citet[p. 13]{Rasmussen:2005:GPM:1162254} a \Gls{GaussianProcess} is fully defined as follows:
+According to \citet[p.\ 13]{Rasmussen:2005:GPM:1162254} a \Gls{GaussianProcess} is fully defined as follows:
 \begin{equation}\label{eq:GP}
 \mathcal{GP}(m(\mathbf{x}),k(\mathbf{x},\mathbf{x'}))
 \end{equation}
@@ -387,26 +419,26 @@ The hyperparameters here are the lengthscale $l$, the signal variance $\sigma_f^
 \paragraph{Hyperparameter Optimization}
 The \Gls{GaussianProcess} \gls{Regression} is a parameterless \gls{Regression} method. But we have to deal with so called \gls{Hyperparameter}s. The advantage here is that we can use optimization algorithms in order to find values that are working well. In order to find those values we take the \gls{LogLikelihood} and maximize it. The \gls{LogLikelihood} function gives us an indication how well the \Gls{GaussianProcess} fits to the data. The higher the value of the \gls{LogLikelihood} function the better the closer the \Gls{GaussianProcess} resembles the given data.
 
-The \gls{LogLikelihood} is defined by the following function\citep[p. 113]{Rasmussen:2005:GPM:1162254}.
+The \gls{LogLikelihood} is defined by the following function \citep[p.\ 113]{Rasmussen:2005:GPM:1162254}.
 \begin{equation} \label{eq:ll}
 log\,p(\mathbf{y}|\mathbf{X},\theta) = -\dfrac{1}{2}\mathbf{y}^T(K+\sigma^2_nI)^{-1}\mathbf{y}-\dfrac{1}{2}log\,|K+\sigma^2_nI|-\dfrac{n}{2}log\,2\pi
 \end{equation}
 
-Here $\theta$ are the \gls{Hyperparameter}s $l$, $\sigma_n^2$ and $\sigma_f^2$. In order to use optimization algorithms we also need the partial derivatives of the function\citep[p. 114]{Rasmussen:2005:GPM:1162254}.
+Here $\theta$ are the \gls{Hyperparameter}s $l$, $\sigma_n^2$ and $\sigma_f^2$. In order to use optimization algorithms we also need the partial derivatives of the function \citep[p.\ 114]{Rasmussen:2005:GPM:1162254}.
 \begin{equation}\label{eq:lld}
 \dfrac{\partial}{\partial\theta_j}log\,p(\mathbf{y}|\mathbf{X},\theta) = \dfrac{1}{2}tr\bigg((K^{-1}\mathbf{y}) (K^{-1}\mathbf{y})^T \dfrac{\partial K}{\partial \theta_j}\bigg)
 \end{equation}
 
 So, we need a method that uses the information from the \gls{LogLikelihood} function and its gradient, and maximizes the value by adjusting the \gls{Hyperparameter} values. 
-Some examples of algorithms that are suitable to optimize the \gls{Hyperparameter}s are the \gls{GradientDescent}\citep{Shewchuk:1994:ICG:865018}, \Gls{BFGS} or \Gls{L-BFGS}\citep{liu1989limited}. \citet{blum2013optimization} propose to use resilient backpropagation (\Gls{Rprop}) to solve this problem. They show that the algorithm has a similar performance as \Gls{L-BFGS}. But it has the advantage over \Gls{L-BFGS} and similar methods that it is easier to implement.
+Some examples of algorithms that are suitable to optimize the \gls{Hyperparameter}s are the \gls{GradientDescent} \citep{Shewchuk:1994:ICG:865018}, \Gls{BFGS} or \Gls{L-BFGS} \citep{liu1989limited}. \citet{blum2013optimization} propose to use resilient backpropagation (\Gls{Rprop}) to solve this problem. They show that the algorithm has a similar performance as \Gls{L-BFGS}. But it has the advantage over \Gls{L-BFGS} and similar methods that it is easier to implement.
 
-Like most methods the algorithm requires not only the function itself, but also the gradient. But it doesn't use the second order derivatives or an approximation thereof, which leads to shorter computation times per iteration\citep{blum2013optimization}. 
+Like most methods the algorithm requires not only the function itself, but also the gradient. But it doesn't use the second order derivatives or an approximation thereof, which leads to shorter computation times per iteration \citep{blum2013optimization}. 
 
 In every iteration the \gls{Hyperparameter}s $\theta$ are updated depending on the sign of the derivative:
 \begin{equation}
 \theta_i^{(t+1)} = \theta_i^{(t)} - sign\bigg(\dfrac{\partial J^{(t)}}{\partial \theta_i}\bigg) \Delta_i^{(t)}
 \end{equation}
-$\Delta_i$ is the update-value. Depending on the change of the sign the \gls{Hyperparameter}, $\Delta_i$ is either increased by a factor of $\eta^+ > 0$ or decreased by a factor $0 < \eta^- < 1$. 
+$\Delta_i$ is the update-value. Depending on the change of the sign the \gls{Hyperparameter}, $\Delta_i$ is either increased by a factor of $\eta^+ > 1$ or decreased by a factor $0 < \eta^- < 1$. 
 \begin{equation}
 \Delta_i^{(t)} = 
 \begin{cases}
@@ -418,11 +450,11 @@ $\Delta_i$ is the update-value. Depending on the change of the sign the \gls{Hyp
 \end{cases}
 \end{equation}
 
-The initial update value is set to $\Delta_0$ and is bounded by $\Delta_{min}$ and $\Delta_{max}$. The parameters have to be specified, but there are values that work for most cases\citep{blum2013optimization}. 
+The initial update value is set to $\Delta_0$ and is bounded by $\Delta_{min}$ and $\Delta_{max}$. The parameters have to be specified, but there are values that work for most cases \citep{blum2013optimization}. 
 
 So in order to get good values for the \gls{Hyperparameter}s we need to apply the algorithm to the partial derivatives as specified in equation \ref{eq:lld}. Like most optimization algorithms it tries to minimize the function value, but we need to maximize it. The higher the \gls{LogLikelihood} is the better the fit. So we simply use the negative \gls{LogLikelihood} and its negative partial derivatives. 
 
-The algorithms will run for a set number of iterations or until every partial derivative is 0. At every iteration we check the negative \gls{LogLikelihood} and compare it with the best result we found yet. If the new result is smaller we save the current \gls{Hyperparameter}s. At the end of this process the \Gls{GaussianProcess} will fit well to the training data\citep{blum2013optimization}.
+The algorithms will run for a set number of iterations or until every partial derivative is 0. At every iteration we check the negative \gls{LogLikelihood} and compare it with the best result we found yet. If the new result is smaller we save the current \gls{Hyperparameter}s. At the end of this process the \Gls{GaussianProcess} will fit well to the training data \citep{blum2013optimization}.
 
 \section{Chapter Summary}
 At the beginning of this chapter we explained the basics of localization. We moved from the uncertainty involved in robotics to the \gls{RecursiveStateEstimation} to its implementation with a \gls{Particle} filter. At the end of section \ref{sec:localization} we showed the \Gls{MonteCarlo} that uses \gls{Particle} filters. For the \Gls{MonteCarlo} to actually work we need sensor models. For a Wi-Fi receiver \Gls{GaussianProcess}es are well suited. 

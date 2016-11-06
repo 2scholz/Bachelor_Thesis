@@ -14,6 +14,8 @@
 \usepackage{amsmath}
 \usepackage{algorithm}
 \usepackage{algpseudocode}
+\usepackage{dirtree}
+\usepackage{listings}
 \usepackage{verbatim}  % Needed for the "comment" environment to make LaTeX comments
 \usepackage{vector}  % Allows "\bvec{}" and "\buvec{}" for "blackboard" style bold vectors in maths
 \hypersetup{urlcolor=black, colorlinks=true}  % Colours hyperlinks in blue, but this can be distracting if there are many links.
@@ -21,6 +23,8 @@
 \usepackage[square, authoryear]{natbib}
 \usepackage[nonumberlist]{glossaries}	
 \makeglossaries
+
+\hyphenation{Wi-Fi}
 
 \newglossaryentry{MonteCarlo}
 {
@@ -38,7 +42,7 @@
 {
     name=Gaussian process,
     description={A collection of random variables, any
-    finite number of which have a joint Gaussian distribution\citep[p. 13]{Rasmussen:2005:GPM:1162254}}
+    finite number of which have a joint Gaussian distribution \citep[p. 13]{Rasmussen:2005:GPM:1162254}}
 }
 
 \newglossaryentry{RGBD}
@@ -61,7 +65,7 @@
 
 \newglossaryentry{GPS}{name={GPS},description={A global positioning system that is using satellites. It can be used to determine the current location with an error of a few meters}}
 
-\newglossaryentry{LIDAR}{name={LIDAR},description={Short for ``Light Detection and Ranging''. It is a type of sensor, that is using light in order to measure the distance to obstacles in the environment. It can be used to create 3D representations of areas}}
+\newglossaryentry{LIDAR}{name={LIDAR},description={Short for ``Light Detection and Ranging''. It is a type of sensor, that is using light in order to measure the distance to obstacles in the environment. It can be used to create 2D or 3D representations of areas}}
 
 \newglossaryentry{GlobalLocalization}{name={global localization},description={Global localization describes localization without any prior information about the current position. That means a robot would have to figure out its current position at the start of the localization}}
 
@@ -81,7 +85,7 @@
 
 \newglossaryentry{Particle}{name={particle},description={Particles are generally a small part of larger system. Here particles are used to refer to samples that represent parts of a state belief}}
 
-\newglossaryentry{KidnappedRobotProblem}{name={kidnapped robot problem},description={Describes the problem when a robot is taken and brought to a different location while a localization is running. The problem is that the robot is now localized in the wrong position and thus the localization fails. Kidnapped robot problem is often used interchangeably with localization failure}}
+\newglossaryentry{KidnappedRobotProblem}{name={kidnapped robot problem},description={Describes the problem when a robot is taken and brought to a different location while a localization is running. The problem is that the robot is now localized in the wrong position and thus the localization fails}}
 
 \newglossaryentry{Hyperparameter}{name={hyperparameter},description={A hyperparameter is a parameter that can be learned. There is no need to set it manually}}
 
@@ -91,13 +95,15 @@
 
 \newglossaryentry{TrainingSet}{name={training set},description={A set of data that was recorded in order to discover the relationship between different variables. To discover those relationships regression can be used}}
 
-\newglossaryentry{Kernel}{name={kernel},description={When used with Gaussian processes kernels are also referred to as covariance function. They are used to measure the difference between two inputs. They can lift the inputs into a higher space, while the computations still happen in the input space. Thus one can save computation time by applying using kernels. They can be used whenever an operation can be represented by a dot product}}
+\newglossaryentry{Kernel}{name={kernel},description={When used with Gaussian processes, kernels are also referred to as covariance function. They are used to measure the difference between two inputs. They can lift the inputs into a higher space, while the computations still happen in the input space. Thus one can save computation time by applying kernels. They can be used whenever an operation can be represented by a dot product}}
 
 \newglossaryentry{LogLikelihood}{name={log-likelihood},description={It is the natural logarithm of a likelihood function. In some cases they are easier to work with than the original likelihood function. The logarithm is monotonically increasing and has the maximum at the same point as the likelihood function. Often the partial derivatives of the log-likelihood function is easier to compute than the partial derivatives of the likelihood function. Thus it is attractive to use in order to optimize hyperparameters by searching the maximum of a function}}
 
 \newglossaryentry{GradientDescent}{name={gradient descent},description={An algorithm that uses first-order derivatives in order to find a local minimum of a function}}
 
 \newglossaryentry{Rprop}{name={Rprop},description={Short for resilient backpropagation. Using first-order derivatives the algorithm can be used to find a local minimum. It only uses the sign of resulting partial derivatives when searching for the minimum}}
+
+\newglossaryentry{Gyro}{name={gyro},description={In general gyro sensors are used to measure angular velocity. For mobile robots they are used to measure the change in orientation}}
 %% ----------------------------------------------------------------
 \begin{document}
 \includepdf[pages=-, offset=75 -75]{./title/title.pdf}
@@ -118,8 +124,11 @@
 % The Abstract Page
 \addtotoc{Abstract}  % Add the "Abstract" page entry to the Contents
 \abstract{ %\addtocontents{toc}{\vspace{1em}}  % Add a gap in the Contents, for aesthetics
+\textbf{English:}\\
+Localization is an important problem in robotics, that is needed for many navigation tasks. A sensor that is often used for this problem is the 2D laser range finder. It usually results in a precise localization as long as the robot's pose is roughly known at the start. Is this not the case the problem is specifically called global localization. Especially in rooms with a symmetric layout or rooms without any unique characteristics, a global localization using only a 2D laser range finder fails in many cases. Our approach here is to use Wi-Fi signal strength to infer an approximate position estimation. In this thesis we use Gaussian process regression with pre-recorded signal strength data of the environment in order to realize a Wi-Fi position estimation. The Wi-Fi position estimation is used to give a Monte Carlo localization with a 2D laser range finder an approximate initial position at the start in order to improve the global localization in buildings. The result is a higher success rate for the global localization when using the Wi-Fi position estimation compared to the approach only using the laser range finder. 
 
-The Thesis Abstract is written here (and usually kept to just this page). The page is kept centered vertically so can expand into the blank space above the title too\ldots
+\textbf{Deutsch:}\\
+Die Standortbestimmung ist ein wichtiges Problem in der Robotik. Sie wird für eine Vielzahl von Navigationsaufgaben benötigt. 2D Laserentfernungsmesser sind beliebte Sensoren für diese Aufgabe. In den meisten Fällen führt dies zu einer präzisen Lokalisation, zumindest wenn die Position des Roboters beim Start bekannt ist. Wenn dies nicht der Fall ist, spricht man auch von einer globalen Lokalisation. Insbesondere in Räumen mit symmetrischem Strukturen oder Räumen ohne auffallende Eigenschaften, führt eine globale Lokalisation, die nur einen 2D Laserentfernungsmesser nutzt, zum Misserfolg. Unser Ansatz ist in diesen Fällen Wi-Fi-Signalstärken zu verwenden, um daraus eine Position zu approximieren. Mit Hilfe von Gaußprozessregression setzen wir eine Wi-Fi Positionsschätzung um. Hierfür werden vorher Signalstärken in der Umgebung aufgenommen. Diese Wi-Fi-Positionsschätzung wird dann zusammen mit einer Monte Carlo Lokalisation, die einen 2D Laserentfernungsmesser verwendet, benutzt um die globale Lokalisation in Gebäuden zu verbessern. Das Resultat ist eine höhere Erfolgsrate für die globale Lokalisation, im Vergleich zum Ansatz der nur den 2D Laserentfernungsmesser verwendet.
 
 }
 
@@ -148,6 +157,7 @@ The Thesis Abstract is written here (and usually kept to just this page). The pa
 % \textbf{Acronym} & \textbf{W}hat (it) \textbf{S}tands \textbf{F}or \\
 \textbf{AMCL} & \textbf{A}daptive \textbf{M}onte \textbf{C}arlo \textbf{L}ocalization \\
 \textbf{BFGS} & \textbf{B}royden \textbf{F}letcher \textbf{G}oldfarb \textbf{S}hanno \\
+\textbf{CSV} & \textbf{C}omma \textbf{S}eperated \textbf{V}alues \\
 \textbf{GPS} & \textbf{G}lobal \textbf{P}ositioning \textbf{S}ystem \\
 \textbf{L-BFGS} & \textbf{L}imited-memory \textbf{B}royden \textbf{F}letcher \textbf{G}oldfarb \textbf{S}hanno \\
 \textbf{LIDAR} & \textbf{Li}ght \textbf{D}etection \textbf{A}nd \textbf{R}anging \\
@@ -211,7 +221,7 @@ The Thesis Abstract is written here (and usually kept to just this page). The pa
 
 \appendix % Cue to tell LaTeX that the following 'chapters' are Appendices
 
-%\input{./Appendices/AppendixA}	% Appendix Title
+\input{./Appendices/AppendixA}	% Appendix Title
 
 %\input{./Appendices/AppendixB} % Appendix Title
 

@@ -1,12 +1,12 @@
 \chapter{Experiments and Results} % Write in your own chapter title
 \label{Chapter4}
 \lhead{Chapter 4. \emph{Experiments and Results}} % Write in your own chapter title to set the page header
-In order to determine how well the Wi-Fi position estimation works, we carried out a number of experiments. But at first we will analyze the collected Wi-Fi data in section \ref{sec:wifidata}. 
+In order to determine how well the Wi-Fi position estimation works, we carried out a number of experiments. First we will analyze the collected Wi-Fi data in section \ref{sec:wifidata}. 
 In section \ref{sec:acc} we will assess the accuracy of the Wi-Fi position estimation by itself.
-The following section \ref{sec:wifiposamcl} contains two experiments that determine how well the Wi-Fi position estimation can aid AMCL with a \gls{LaserRangeFinder}. In the first experiment we evaluate how well it can help with the \gls{GlobalLocalization}. In the third and last experiment we inspected how well the localization failure detection works. 
+The following section \ref{sec:wifiposamcl} contains two experiments that determine how well the Wi-Fi position estimation can aid AMCL with a \gls{LaserRangeFinder}. In the first experiment we evaluate how well it can help with the \gls{GlobalLocalization}. In the third and last experiment we inspect how well the localization failure detection works. 
 \section{Data Analysis and Experiments}
-\subsection{Wi-Fi data}\label{sec:wifidata}
-First let's examine the Wi-Fi data and look at how it behaves. 
+\subsection{Wi-Fi Data}\label{sec:wifidata}
+We want to examine the Wi-Fi data and look at how it behaves. 
 \begin{figure}[htbp]
 	\centering
 		\includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{./Figures/wifi_hallway.png}
@@ -22,54 +22,105 @@ Figure \ref{fig:hallway_same_floor_wifi} shows an example of the Wi-Fi strength 
 	\caption[Hallway Wi-Fi data]{Visualization of Wi-Fi data collected on a hallway. In this example the access point is on a different floor.}
 	\label{fig:hallway_different_floor_wifi}
 \end{figure}
-Turning to a different example from figure \ref{fig:hallway_different_floor_wifi}. As one can see the signal never reaches the strength of figure \ref{fig:hallway_same_floor_wifi}. But still the peak is at the center of the recorded data. To both sides then it gets weaker until it the Wi-Fi receiver can't pick it up anymore. It is reasonable to assume that the signal originates from an access point on another floor, so either from a hallway above or below. Still even though the signal is obstructed it is evenly distributed. This is probably due to the fact that no matter where the robot recorded the signal on the hallway, the signal was always obstructed by walls and thus was weakened equally. 
+Another example can be seen in figure \ref{fig:hallway_different_floor_wifi}. Here the signal never reaches the strength of figure \ref{fig:hallway_same_floor_wifi}. But still the peak is at the center of the recorded data. To both sides then it gets weaker until it the Wi-Fi receiver can't pick it up anymore. It is reasonable to assume that the signal originates from an access point on another floor, so either from a hallway above or below. Still even though the signal is obstructed it is evenly distributed. This is probably due to the fact that no matter where the robot recorded the signal on the hallway, the signal was always obstructed by walls and thus was weakened equally. 
 
 \begin{figure}[htbp]
 	\centering
 		\includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{./Figures/wifi_lab.png}
 		\rule{35em}{0.5pt}
-	\caption[Hallway Wi-Fi data]{Visualization of Wi-Fi data collected in a room.}
+	\caption[Hallway Wi-Fi data]{Visualization of Wi-Fi data collected in our laboratory. This is a room with many potential obstructions of Wi-Fi signals. This is reflected here by the way the Wi-Fi signal strength behaves. The access point is behind the wall of the upper right corner, near the maximum signal strength marked by the yellow color. It can be clearly seen that the signal is not getting gradually weaker.}
 	\label{fig:wifi_lab}
 \end{figure}
 Now figure \ref{fig:wifi_lab} paints a different picture. We can see a clear peak in the upper right corner of the room. And indeed the access point is installed there behind the wall. But the signal doesn't weaken gradually like it was on the floor. Even though in its entirety it does indeed get weaker the further away it was recorded, there are local peaks in different places. 
 
 This is probably due to the nature of this room. There are tables, chairs and a couch, which can all lead to the obstruction of the signal. Especially because the recording robot was relatively small. 
 
-\subsection{Wi-Fi Position Estimation accuracy}\label{sec:acc}
+\subsection{Wi-Fi Position Estimation Accuracy}\label{sec:acc}
 For the Wi-Fi position estimation to be actually useful it is important that it is accurate to a certain extent. It is not necessary to achieve accuracy on the level of a few centimeters, but it can only be useful if it can reduce the possible positions to a radius of a few meters. The first experiment was designed to compare the actual position of the robot with the estimated position from the Wi-Fi data. 
 
-To determine the actual position amcl is used. The position was determined at the start of the localization, so that it is as accurate as possible. The test environment was a long hallway. The hallway can be seen in figure \ref{fig:hallway_same_floor_wifi} This would be the kind of environment where the Wi-Fi position estimation could give an advantage over the usual approach to \gls{GlobalLocalization} because there aren't any characteristics that stand out and there is a lot of symmetry. 
+To determine the actual position AMCL is used. The position was determined at the start of the localization, so that it is as accurate as possible. The test environment was a long hallway. The hallway can be seen in figure \ref{fig:hallway_same_floor_wifi} This would be the kind of environment where the Wi-Fi position estimation could give an advantage over the usual approach to \gls{GlobalLocalization} because there aren't any characteristics that stand out and there is a lot of symmetry. 
 
-The robot drives to different points on the map that were chosen beforehand. When it arrived the robot will execute the Wi-Fi position estimation. The result will be compared with the coordinates given by amcl. The difference between the two results will be computed.
+The robot drives to different points on the map that were chosen beforehand. When it arrived the robot will execute the Wi-Fi position estimation. The result will be compared with the coordinates given by AMCL. The difference between the two results will be computed.
 
-The result of the experiment was, that on average the difference to the ground truth was 1.81 meters.
+The result of the experiment was, that on average the difference to the ground truth was 1.81 meters. The individual results can be seen in table \ref{table:exp1}.
+
+\begin{table}
+\caption{Error of the Wi-Fi position estimation in meters.}
+\label{table:exp1}
+\begin{tabular}{l*{10}{c}r}
+  \hline			
+  \bf Try: & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 & 10 \\
+  \bf Error: & 3.75 & 1.32 & 0.63 & 2.72 & 1.42 & 3.88 & 0.25 & 1.86 & 3.27 & 1.55 \\
+  \hline  
+    \bf Try: & 11 & 12 & 13 & 14 & 15 & 16 & 17 & 18 & 19 & 20 \\
+    \bf Error: & 1.11 & 0.38 & 0.49 & 0.37 & 0.97 & 4.25 & 1.08 & 0.38 & 6.36 & 0.18 \\
+    \hline  
+\end{tabular}
+\end{table}
+
+
+
+\begin{tabular}{l*{10}{c}r}
+
+\end{tabular}
 % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % %
 % Result here.
-\subsection{Amcl with Wi-Fi Position Estimation}\label{sec:wifiposamcl}
+\subsection{AMCL with Wi-Fi Position Estimation}\label{sec:wifiposamcl}
 %\subsubsection{Global Localization}
 \paragraph{Global Localization}
-The proposed potential use for the position estimation was that it could give a starting position for amcl. This experiment will answer in how far the position estimation can aid amcl. Once again a hallway is used. A set of goals for the robot to drive to is used. When a goal was reached the two different methods for \gls{GlobalLocalization} are compared.
+The proposed potential use for the position estimation was that it could give a starting position for AMCL. This experiment will answer in how far the position estimation can aid AMCL. Once again a hallway is used. A set of goals for the robot to drive to is used. When a goal was reached the two different methods for \gls{GlobalLocalization} are compared. 
 
 One method uses the typical \gls{GlobalLocalization} where the particles are spread over the entire map and then converge to one pose. The other method will use the Wi-Fi position estimation as a seed and will lead to a much smaller area for the particles to be spread out in. 
 
 When the estimation was performed the robot will turn 360 degrees and then drive to the next planned goal. From there the procedure is repeated. 
 
-At the arrival at the next goal the difference to the actual position was measured. Using the Wi-Fi position estimation the mean error was 3.39 meters. With the \gls{GlobalLocalization} the mean error was 17.34 meters. 
+At the arrival at the next goal the difference to the actual position was measured. Using the Wi-Fi position estimation the mean error was 2.23 meters. With the \gls{GlobalLocalization} the mean error was 17.34 meters. 
 
-While observing the global localization using the Wi-Fi position estimation when executing the experiment some notable behaviors occurred. All in all in 7 of 19 tries the robot was able to approximately find the correct location. In some cases the failure could be explained by the fact that the Wi-Fi position estimation was too far away from the true position. In other cases the robot localized itself in the wrong direction. Of course the reason for this is that with the Wi-Fi data we are not able to infer any information about the orientation of the robot. The hallway looks very similar on both sides, so it is easy to reconstruct as to why the localization was failing. In figure \ref{fig:hallway_different_floor_wifi} one can see that on one side of the hallway the wall is built straight, while on the other side in a certain interval the wall gives way to a bit more space. So sometimes it happened that the robot was localizing itself next to one of these spaces, even though it was actually next to the space before or behind it. So even when we are able to narrow down the possible position of the robot on the map, the \gls{LaserRangeFinder} based localization can still get confused by the structure of the room. 
+\begin{table} \label{table:exp2wpe}
+\caption{Error in meters of the global localization using the Wi-Fi position estimation.}
+\begin{tabular}{l*{10}{c}r}
+  \hline			
+  \bf Try: & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 & 10 \\
+  \bf Error: & 3.63 & 0.01 & 0.08 & 7.15 & 7.85 & 1.83 & 0.05 & 6.48 & 0.01 & 2.04 \\
+  \hline  
+    \bf Try: & 11 & 12 & 13 & 14 & 15 & 16 & 17 & 18 & 19 \\
+    \bf Error: & 0.04 & 0.17 & 5.14 & 0.13 & 0.02 & 4.8 & 0.06 & 2.82 & 0.03 \\
+    \hline  
+\end{tabular}
+\end{table}
+
+\begin{table} \label{table:exp2gl}
+\caption{Error in meters of the global localization using the standard approach from AMCL.}
+\begin{tabular}{l*{7}{c}r}
+  \hline			
+  \bf Try: & 1 & 2 & 3 & 4 & 5 & 6 & 7 \\
+  \bf Error: & 20.31 & 34.11 & 9.89 & 7.70 & 29.07 & 28.31 & 0.15 \\  
+    \hline			
+    \bf Try: & 8 & 9 & 10 & 11 & 12 & 13 & 14 \\
+    \bf Error: & 9.68 & 5.09 & 20.22 & 5.24 & 9.04 & 10.34 & 14.38 \\
+        \hline			
+        \bf Try: & 15 & 16 & 17 & 18 & 19 \\
+        \bf Error: & 24.52 & 34.95 & 25.46 & 5.50 & 35.44 \\
+        \hline  
+\end{tabular}
+\end{table}
+
+While observing the global localization using the Wi-Fi position estimation when executing the experiment some notable behaviors occurred. All in all in 9 of 19 tries the robot was able to approximately find the correct location. In some cases the failure could be explained by the fact that the Wi-Fi position estimation was too far away from the true position. In other cases the robot localized itself in the wrong direction. Of course the reason for this is that with the Wi-Fi data we are not able to infer any information about the orientation of the robot. The hallway looks very similar on both sides, so it is easy to reconstruct as to why the localization was failing. In figure \ref{fig:hallway_different_floor_wifi} one can see that on one side of the hallway the wall is built straight, while on the other side in a certain interval the wall gives way to a bit more space. So sometimes it happened that the robot was localizing itself next to one of these spaces, even though it was actually next to the space before or behind it. So even when we are able to narrow down the possible position of the robot on the map, the \gls{LaserRangeFinder} based localization can still get confused by the structure of the room. 
+
+The global localization implemented in the AMCL package was mostly able to localize the robot on the hallway, but in just one case it was able to approximately localize the robot on the right position. The obvious reason is that the hallway's outline is very similar in a lot of places. The Wi-Fi position estimation had similar problems, but there the part of the hallway that was taken into account was already very small. AMCL spreads its particles over the whole map when starting the global localization, so naturally these problems are magnitudes higher too.
 % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % %
 % Results here:
 %\subsubsection{Kidnapped Robot Problem}
 \paragraph{Kidnapped Robot Problem}
-Another case where the position estimation can be used in AMCL, is when the localization fails. This kind of problem is called the kidnapped robot problem. 
+Another case where the position estimation can be used in AMCL, is when the robot was picked up while localizing and brought to a different position without noticing it. This kind of problem is called the kidnapped robot problem. 
 
-In this experiment the robot will drive up and down the hallway. The values from equation \ref{eq:decay} are used to compare the weights in the long term, with the weights in the short term. This means the robot needs to be localized correctly for some time, so that it can be detected that the robot was kidnapped. So at first the robot will drive up and down the hallway with the help of AMCL using the laser range finder. We will record this with a rosbag. Once finished the rosbag can be replayed and a new instance of AMCL can be applied to the recorded data. At first we will initialize the new instance of AMCL to the correct location. After driving up and down for some time AMCL will be given an initial position at a random point on the map. So this will result in a localization failure. Meanwhile AMCL still gets the data from the robot driving up and down the hallway from the rosbag. Since AMCL now has the wrong location, the ``/max\_weight'' value should rise and signal this localization failure or kidnapping of the robot. 
+In this experiment the robot will drive up and down the hallway. The values from equation \ref{eq:decay} are used to compare the weights in the long term, with the weights in the short term. This means the robot needs to be localized correctly for some time, so that it can be detected that the robot was kidnapped. So at first the robot will drive up and down the hallway with the help of AMCL using the laser range finder. We will record this with a rosbag. Once finished the rosbag can be replayed and a new instance of AMCL can be applied to the recorded data. At first we will initialize the new instance of AMCL to the correct location. After driving up and down for some time AMCL will be given an initial position at a random point on the map. So this will result in a localization failure. Meanwhile AMCL still gets the data from the robot driving up and down the hallway from the rosbag. Since AMCL now has the wrong location, the ``/amcl\_failure\_probability'' value should rise and signal this localization failure or kidnapping of the robot. 
 
-We now want to know if the Wi-Fi position estimation would be triggered. For that to happen we set a threshold of 0.1 for the ``/max\_weight'' topic. This value is computed by AMCL as explained in section \ref{sec:krp}. 
+We now want to know if the Wi-Fi position estimation would be triggered. For that to happen we set a threshold of 0.1 for the ``/amcl\_failure\_probability'' topic. This value is computed by AMCL as explained in section \ref{sec:krp}. 
 
-In 10 tries the Wi-Fi position estimation was triggered every time by the time the robot was at the other end of the hallway. The mechanic that is used is the same as in the previous experiment, so a new the new computed position is given as a seed for AMCL. The accuracy of this mechanic was already discussed in the previous chapter. 	
+In 10 tries the Wi-Fi position estimation was triggered every time by the time the robot was at the other end of the hallway. The method that is used is the same as in the previous experiment, so a new the new computed position is given as a seed for AMCL. The accuracy of this mechanic was already discussed in the previous chapter. 	
 \section{Chapter Summary}
-We looked at the Wi-Fi data and its behavior. When there is are no obstacles in between the access point and the robot, the signal gradually gets weaker the further the robot is away. In rooms with many obstructions we saw that the signal is less predictable. 
-The first experiment was designed to measure the Wi-Fi position estimation's accuracy, that resulted in an average error of about 1.81 meters. In the next experiment we used this mechanic to enhance the global localization of AMCL. The computed position is given as a seed for AMCL. The result was an improvement over AMCL's usual global localization, with an error of 3.39 meters with using the Wi-Fi position estimation compared to an error of 17.34 meters without it.
+We looked at the Wi-Fi data and its behavior. When there are are no obstacles in between the access point and the robot, the signal gradually gets weaker the further the robot is away. In rooms with many obstructions we saw that the signal is less predictable. 
+The first experiment was designed to measure the Wi-Fi position estimation's accuracy, that resulted in an average error of about 1.81 meters. In the next experiment we used this mechanic to enhance the global localization of AMCL. The computed position is given as a seed for AMCL. The result was an improvement over AMCL's usual global localization, with an error of 2.23 meters with using the Wi-Fi position estimation compared to an error of 17.34 meters without it.
 The last experiment was designed to test the localization failure detection. It worked in 10 out of 10 tries. 
 In the following chapter we will evaluate the results of the experiments and draw our conclusions from them.

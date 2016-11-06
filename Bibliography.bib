@@ -55,11 +55,15 @@
   organization={IEEE}
 }
 
-@INPROCEEDINGS{ferris2006gaussian,
-    author = {Brian Ferris and Dirk Hähnel and Dieter Fox},
-    title = {{Gaussian} {Processes} for {Signal} {Strength}-{Based} {Location} {Estimation}},
-    booktitle = {In Proc. of Robotics Science and Systems},
-    year = {2006}
+@article{ferris2006gaussian,
+abstract = {Estimating the location of a mobile device or a robot from wireless signal strength has become an area of highly active research. The key problem in this context stems from the complexity of how signals propagate through space, especially in the presence of obstacles such as buildings, walls or people. In this paper we show how Gaussian processes can be used to generate a likelihood model for signal strength measurements. We also show how parameters of the model, such as signal noise and spatial correlation between measurements, can be learned from data via hyperparameter estimation. Experiments using WiFi indoor data and GSM cellphone connectivity demonstrate the superior performance of our approach.},
+author = {Ferris, Brian and Hahnel, Dirk and Fox, Dieter},
+journal = {Proc. Robotics: Science and Systems},
+pages = {303--310},
+title = {{Gaussian Processes for Signal Strength-Based Location Estimation}},
+url = {http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.123.6238},
+volume = {442},
+year = {2006}
 }
 
 @inproceedings{blum2013optimization,
@@ -83,13 +87,17 @@
   publisher={IACSIT Press}
 }
 
-@inproceedings{Dellaert_1999_533,
-   author = "Frank Dellaert and Dieter Fox and Wolfram Burgard and Sebastian Thrun",
-   title = "{Monte} {Carlo} {Localization} for {Mobile} {Robots}",
-   booktitle = "IEEE International Conference on Robotics and Automation (ICRA99)",
-   month = "May",
-   year = "1999",
-}
+@INPROCEEDINGS{Dellaert_1999_533, 
+author={F. Dellaert and D. Fox and W. Burgard and S. Thrun}, 
+booktitle={Robotics and Automation, 1999. Proceedings. 1999 IEEE International Conference on}, 
+title={{Monte} {Carlo} localization for mobile robots}, 
+year={1999}, 
+volume={2}, 
+pages={1322-1328 vol.2}, 
+keywords={Monte Carlo methods;distance measurement;mobile robots;path planning;probability;Monte Carlo localization;arbitrary distributions;indoor environments;position estimation;probability densities;sampling-based representation;Bayesian methods;Computer science;Indoor environments;Mobile robots;Monte Carlo methods;Navigation;Orbital robotics;Robot localization;State-space methods;Uncertainty}, 
+doi={10.1109/ROBOT.1999.772544}, 
+ISSN={1050-4729}, 
+month={},}
 
 @inproceedings{DBLP:conf/icra/ItoEKTSB14,
   author    = {Seigo Ito and
@@ -135,8 +143,9 @@ DOI = {10.3390/s151229867}
 	 publisher = {Springer-Verlag New York},
 	} 
 	
-@book{misra2006global,	
-  title={{Global} {Positioning} {System}: {Signals}, {Measurements}, and {Performance} ({Revised} {Second} {Edition})},
+
+@misc{misra2006global,
+  title={{Global} {Positioning} {System:} {Signals,} {Measurements} and {Performance} {Second} {Edition}},
   author={Misra, Pratap and Enge, Per},
   year={2011},
   publisher={Ganga-Jamuna Press}
@@ -173,7 +182,7 @@ DOI = {10.3390/s151229867}
    
    @manual{laser,
      title        = {{Scanning Laser Range Finder UTM-30LX/LN Specification}},
-     organization = {HOKUYO AUTOMATIC CO.,LTD.},
+     organization = {Hokuyo Inc. Ltd.},
      month        = 11,
      year         = 2012,
    }
@@ -208,3 +217,11 @@ DOI = {10.3390/s151229867}
     publisher = {Carnegie Mellon University},
     address = {Pittsburgh, PA, USA},
    } 
+   
+   @conference {288,
+   	title = {{ROS}: an open-source {R}obot {O}perating {S}ystem},
+   	booktitle = {ICRA Workshop on Open Source Software},
+   	year = {2009},
+   	attachments = {http://www.willowgarage.com/sites/default/files/icraoss09-ROS.pdf},
+   	author = {Morgan Quigley and Ken Conley and Brian P. Gerkey and Josh Faust and Tully Foote and Jeremy Leibs and Rob Wheeler and Andrew Y. Ng}
+   }
