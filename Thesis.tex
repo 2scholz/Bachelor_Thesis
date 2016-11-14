@@ -4,7 +4,7 @@
 
 
 % Set up the document
-\documentclass[a4paper, 12pt, oneside]{Thesis}  % Use the "Thesis" style, based on the ECS Thesis style by Steve Gunn
+\documentclass[a4paper, 12pt, twoside]{Thesis}  % Use the "Thesis" style, based on the ECS Thesis style by Steve Gunn
 \graphicspath{{Figures/}}  % Location of the graphics files (set up for graphics to be in PDF format)
 
 % Include any extra LaTeX packages required
@@ -34,7 +34,8 @@
 
 \newglossaryentry{LaserRangeFinder}
 {
-    name=laser range finder,
+    name=Laser range finder,
+    text=laser range finder,
     description={Sensor that uses laser beams to detect the distance of obstacles}
 }
 
@@ -54,7 +55,7 @@
 \newglossaryentry{BFGS}
 {
     name=BFGS,
-    description={An optimization algorithm, that can be used to find minima or maxima of functions. It uses both first order- and second order-derivative information, while not explicitly computing the second order-derivative}
+    description={An optimization algorithm to find minima or maxima of functions. It uses both first order- and second order-derivative information, while not explicitly computing the second order-derivative}
 }
 
 \newglossaryentry{L-BFGS}
@@ -63,47 +64,47 @@
     description={The limited-memory variant of the BFGS algorithm}
 }
 
-\newglossaryentry{GPS}{name={GPS},description={A global positioning system that is using satellites. It can be used to determine the current location with an error of a few meters}}
+\newglossaryentry{GPS}{name={GPS},description={A global positioning system that is using satellites. It can be used to determine the current location outdoors with an error of a few meters}}
 
 \newglossaryentry{LIDAR}{name={LIDAR},description={Short for ``Light Detection and Ranging''. It is a type of sensor, that is using light in order to measure the distance to obstacles in the environment. It can be used to create 2D or 3D representations of areas}}
 
-\newglossaryentry{GlobalLocalization}{name={global localization},description={Global localization describes localization without any prior information about the current position. That means a robot would have to figure out its current position at the start of the localization}}
+\newglossaryentry{GlobalLocalization}{name={Global localization},text={global localization},description={Global localization describes localization without any prior information about the current position}}
 
 \newglossaryentry{MAC-address}{name={MAC-address},description={Short for media access control-address. This address is a commonly used identifier in networks. So for example a Wi-Fi receiver has its own MAC-address as does the access point. The MAC-address is unique for each interface}}
 
-\newglossaryentry{Odometer}{name={odometer},description={An odometer is a common sensor used in order to measure the distance traveled}}
+\newglossaryentry{Odometer}{name={Odometer},text={odometer},description={An odometer is a commonly used sensor in order to measure the distance traveled}}
 
-\newglossaryentry{RecursiveStateEstimation}{name={recursive state estimation},description={Using incoming data a current state is computed recursively, by using the previous state. The state is represented by a probability density function}}
+\newglossaryentry{RecursiveStateEstimation}{name={Recursive state estimation},text={recursive state estimation}, description={Using incoming data a current state is computed recursively, by using the previous state. The state is represented by a probability density function}}
 
-\newglossaryentry{EnvironmentMeasurementData}{name={environment measurement data},description={Provided by sensors like laser range finders, cameras or sonars. The environment measurement data gives us information about the current state of the environment of a robot}}
+\newglossaryentry{EnvironmentMeasurementData}{name={Environment measurement data},text={environment measurement data}, description={Provided by sensors like laser range finders, cameras or sonars. The environment measurement data gives us information about the current state of the environment of a robot}}
 
-\newglossaryentry{ControlData}{name={control data},description={Can be provided by the commands given to a robot, so for example its velocity. Alternatively often provided by sensors like odometers. Control data gives us information about the change of state of a robot}}
+\newglossaryentry{ControlData}{name={Control data},text={control data},description={The commands given to a robot, so for example its velocity. Alternatively often provided by sensors like odometers. Control data gives us information about the change of state of a robot}}
 
-\newglossaryentry{Prior}{name={prior},description={A prior is also called prior probability distribution. It is a distribution that was created by making certain assumptions before taking further evidence into account. When the distribution is transformed by taking that further evidence into account, it is called posterior, or posterior distribution}}
+\newglossaryentry{Prior}{name={Prior},text={prior},description={A prior is also called prior probability distribution. It is a distribution that was created by making certain assumptions before taking further evidence into account. When the distribution is transformed by taking that further evidence into account, it is called posterior, or posterior distribution}}
 
-\newglossaryentry{Posterior}{name={posterior},description={A posterior is also called posterior probability distribution. It is a distribution created from the prior distribution after taking further evidence into account that wasn't considered when creating the prior}}
+\newglossaryentry{Posterior}{name={Posterior},text={posterior},description={A posterior is also called posterior probability distribution. It is a distribution created from the prior distribution after taking further evidence into account that wasn't considered when creating the prior}}
 
-\newglossaryentry{Particle}{name={particle},description={Particles are generally a small part of larger system. Here particles are used to refer to samples that represent parts of a state belief}}
+\newglossaryentry{Particle}{name={Particle},text={particle},description={Particles are generally a small part of larger system. Here particles are used to refer to samples that represent parts of a state belief}}
 
-\newglossaryentry{KidnappedRobotProblem}{name={kidnapped robot problem},description={Describes the problem when a robot is taken and brought to a different location while a localization is running. The problem is that the robot is now localized in the wrong position and thus the localization fails}}
+\newglossaryentry{KidnappedRobotProblem}{name={Kidnapped robot problem},text={kidnapped robot problem}, description={Describes the problem when a robot is taken and brought to a different location while a localization is running. The robot won't be able to register that it moved and is thus localized on the wrong position}}
 
-\newglossaryentry{Hyperparameter}{name={hyperparameter},description={A hyperparameter is a parameter that can be learned. There is no need to set it manually}}
+\newglossaryentry{Hyperparameter}{name={Hyperparameter},text={hyperparameter},description={A hyperparameter is a parameter that can be learned. There is no need to set it manually}}
 
 \newglossaryentry{SSID}{name={SSID},description={Short for service set identifier. It is used by Wi-Fi access points. The identifier is not unique. It is used to signal different access point that belong to the same Wi-Fi network}}
 
-\newglossaryentry{Regression}{name={regression},description={Inferring the relationship between different variables from available scalars from said variables. In case of the example of the linear regression the result is a linear function. In the example of Gaussian process regression the result is a Gaussian process}}
+\newglossaryentry{Regression}{name={Regression},text={regression},description={Inferring the relationship between different variables from available scalars of said variables. In case of the example of the linear regression the result is a linear function. In the example of Gaussian process regression the result is a Gaussian process}}
 
-\newglossaryentry{TrainingSet}{name={training set},description={A set of data that was recorded in order to discover the relationship between different variables. To discover those relationships regression can be used}}
+\newglossaryentry{TrainingSet}{name={Training set},text={training set},description={A set of data that was recorded in order to discover the relationship between different variables. To discover those relationships regression can be used}}
 
-\newglossaryentry{Kernel}{name={kernel},description={When used with Gaussian processes, kernels are also referred to as covariance function. They are used to measure the difference between two inputs. They can lift the inputs into a higher space, while the computations still happen in the input space. Thus one can save computation time by applying kernels. They can be used whenever an operation can be represented by a dot product}}
+\newglossaryentry{Kernel}{name={Kernel},text={kernel},description={When used with Gaussian processes, kernels are also referred to as covariance function. They are used to measure the difference between two inputs. They can lift the inputs into a higher space, while the computations still happen in the input space. Thus one can save computation time by applying kernels. They can be used whenever an operation can be represented by a dot product}}
 
-\newglossaryentry{LogLikelihood}{name={log-likelihood},description={It is the natural logarithm of a likelihood function. In some cases they are easier to work with than the original likelihood function. The logarithm is monotonically increasing and has the maximum at the same point as the likelihood function. Often the partial derivatives of the log-likelihood function is easier to compute than the partial derivatives of the likelihood function. Thus it is attractive to use in order to optimize hyperparameters by searching the maximum of a function}}
+\newglossaryentry{LogLikelihood}{name={Log-likelihood},text={log-likelihood},description={It is the natural logarithm of a likelihood function. In some cases they are easier to work with than the original likelihood function. The logarithm is monotonically increasing and has its maximum at the same point as the likelihood function. Often the partial derivatives of the log-likelihood function are easier to compute than the partial derivatives of the likelihood function. Thus it is attractive to use in order to optimize hyperparameters by searching the maximum of a function}}
 
-\newglossaryentry{GradientDescent}{name={gradient descent},description={An algorithm that uses first-order derivatives in order to find a local minimum of a function}}
+\newglossaryentry{GradientDescent}{name={Gradient descent},text={gradient descent},description={An algorithm that uses first-order derivatives in order to find a local minimum of a function}}
 
 \newglossaryentry{Rprop}{name={Rprop},description={Short for resilient backpropagation. Using first-order derivatives the algorithm can be used to find a local minimum. It only uses the sign of resulting partial derivatives when searching for the minimum}}
 
-\newglossaryentry{Gyro}{name={gyro},description={In general gyro sensors are used to measure angular velocity. For mobile robots they are used to measure the change in orientation}}
+\newglossaryentry{Gyro}{name={Gyro},text={gyro},description={In general gyro sensors are used to measure angular velocity. For mobile robots they are used to measure the change in orientation}}
 %% ----------------------------------------------------------------
 \begin{document}
 \includepdf[pages=-, offset=75 -75]{./title/title.pdf}
@@ -111,24 +112,28 @@
 
 %% ----------------------------------------------------------------
 
-\setstretch{1.3}  % It is better to have smaller font and larger line spacing than the other way round
+\setstretch{1.0}  % It is better to have smaller font and larger line spacing than the other way round
 
 % Define the page headers using the FancyHdr package and set up for one-sided printing
 \fancyhead{}  % Clears all page headers and footers
 %\rhead{\thepage}  % Sets the right side header to show the page number
 \cfoot{\thepage}
-\lhead{}  % Clears the left side page header
+\lhead{}
 
+%\lhead{}  % Clears the left side page header
+%\rhead{}
 \pagestyle{fancy}  % Finally, use the "fancy" page style to implement the FancyHdr headers
 
 % The Abstract Page
 \addtotoc{Abstract}  % Add the "Abstract" page entry to the Contents
 \abstract{ %\addtocontents{toc}{\vspace{1em}}  % Add a gap in the Contents, for aesthetics
-\textbf{English:}\\
-Localization is an important problem in robotics, that is needed for many navigation tasks. A sensor that is often used for this problem is the 2D laser range finder. It usually results in a precise localization as long as the robot's pose is roughly known at the start. Is this not the case the problem is specifically called global localization. Especially in rooms with a symmetric layout or rooms without any unique characteristics, a global localization using only a 2D laser range finder fails in many cases. Our approach here is to use Wi-Fi signal strength to infer an approximate position estimation. In this thesis we use Gaussian process regression with pre-recorded signal strength data of the environment in order to realize a Wi-Fi position estimation. The Wi-Fi position estimation is used to give a Monte Carlo localization with a 2D laser range finder an approximate initial position at the start in order to improve the global localization in buildings. The result is a higher success rate for the global localization when using the Wi-Fi position estimation compared to the approach only using the laser range finder. 
+Localization is an important problem in robotics that is needed for many navigation tasks. A popular sensor that usually results in a precise localization is the 2D laser range finder. It is not well suited for global localization though, where the robot's pose is unknown at the start. Especially rooms with a symmetric outline or rooms without any unique characteristics can cause a global localization only using a laser range finder to fail. Our approach in these cases is to use Wi-Fi signal strength to infer an approximate position. In order to realize a Wi-Fi position estimation we use Gaussian process regression with pre-recorded signal strength data of the environment. The Wi-Fi position estimation is used to give an approximate position at the start to a Monte Carlo localization with a 2D laser range finder. Experiments on a long hallway resulted in a higher success rate for the global localization when using the Wi-Fi position estimation compared to the approach only using the laser range finder.
 
-\textbf{Deutsch:}\\
-Die Standortbestimmung ist ein wichtiges Problem in der Robotik. Sie wird für eine Vielzahl von Navigationsaufgaben benötigt. 2D Laserentfernungsmesser sind beliebte Sensoren für diese Aufgabe. In den meisten Fällen führt dies zu einer präzisen Lokalisation, zumindest wenn die Position des Roboters beim Start bekannt ist. Wenn dies nicht der Fall ist, spricht man auch von einer globalen Lokalisation. Insbesondere in Räumen mit symmetrischem Strukturen oder Räumen ohne auffallende Eigenschaften, führt eine globale Lokalisation, die nur einen 2D Laserentfernungsmesser nutzt, zum Misserfolg. Unser Ansatz ist in diesen Fällen Wi-Fi-Signalstärken zu verwenden, um daraus eine Position zu approximieren. Mit Hilfe von Gaußprozessregression setzen wir eine Wi-Fi Positionsschätzung um. Hierfür werden vorher Signalstärken in der Umgebung aufgenommen. Diese Wi-Fi-Positionsschätzung wird dann zusammen mit einer Monte Carlo Lokalisation, die einen 2D Laserentfernungsmesser verwendet, benutzt um die globale Lokalisation in Gebäuden zu verbessern. Das Resultat ist eine höhere Erfolgsrate für die globale Lokalisation, im Vergleich zum Ansatz der nur den 2D Laserentfernungsmesser verwendet.
+  \begin{center}
+    \bigskip
+    {\Large \textbf{Zusammenfassung} \par}
+  \end{center}
+Die Standortbestimmung in der Robotik ist ein wichtiges Problem und wird für eine Vielzahl von Navigationsaufgaben benötigt wird. Ein beliebter Sensor, der üblicherweise zu einer präzisen Lokalisation führt, ist der 2D Laserentfernungsmesser. Er ist jedoch nicht gut für die globale Lokalisation geeignet, wo die Position des Roboters am Anfang unbekannt ist. Insbesondere Räume mit symmetrischen Strukturen oder Räume ohne auffallende Eigenschaften führen oftmals zum Misserfolg wenn lediglich ein 2D Laserentfernungsmesser für die globale Lokalisation verwendet wird. Unser Ansatz ist, in diesen Fällen Wi-Fi Signalstärken zu verwenden, um daraus eine Position zu approximieren. Mit Hilfe von Gaußprozessregression setzen wir eine Wi-Fi Positionsschätzung um. Hierfür werden vorher Signalstärken in der Umgebung aufgenommen. Diese Wi-Fi-Positionsschätzung wird dann benutzt um einer Monte Carlo Lokalisation, die einen 2D Laserentfernungsmesser verwendet, eine grobe Startposition zu geben. Experimente auf einem langen Flur resultierten in eine höhere Erfolgsrate für die globale Lokalisation mit der Wi-Fi Positionsschätzung, im Vergleich zum Ansatz der nur den 2D Laserentfernungsmesser verwendet.
 
 }
 
@@ -144,14 +149,17 @@ Die Standortbestimmung ist ein wichtiges Problem in der Robotik. Sie wird für e
 
 
 %% ----------------------------------------------------------------
-\lhead{\emph{Contents}}  % Set the left side page header to "Contents"
+%\lhead{\emph{Contents}}  % Set the left side page header to "Contents"
+\fancyhead[LE,RO]{\emph{Contents}}
+
 \tableofcontents  % Write out the Table of Contents
 
 %% ----------------------------------------------------------------
 
 \setstretch{1.5}  % Set the line spacing to 1.5, this makes the following tables easier to read
 \clearpage  % Start a new page
-\lhead{\emph{Abbreviations}}  % Set the left side page header to "Abbreviations"
+%\lhead{\emph{Abbreviations}}  % Set the left side page header to "Abbreviations"
+\fancyhead[LE,RO]{\emph{Abbreviations}}
 \listofsymbols{ll}  % Include a list of Abbreviations (a table of two columns)
 {
 % \textbf{Acronym} & \textbf{W}hat (it) \textbf{S}tands \textbf{F}or \\
@@ -170,8 +178,10 @@ Die Standortbestimmung ist ein wichtiges Problem in der Robotik. Sie wird für e
 }
 
 %% ----------------------------------------------------------------
+\setstretch{1.0} 
 \clearpage
-\lhead{\emph{Glossary}}  % Set the left side page header to "Abbreviations"
+%\lhead{\emph{Glossary}}  % Set the left side page header to "Abbreviations"
+\fancyhead[LE,RO]{\emph{Glossary}}
 \printglossaries{
 \addtotoc{Glossary}
 \addtocontents{toc}{\vspace{1em}}}  % Add the "Abstract" page entry to the Contents}
